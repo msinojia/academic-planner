@@ -13,7 +13,7 @@ public class User {
 
     @Email(message = "Invalid email format")
     @NotBlank(message = "Email is required")
-    @UniqueElements(message = "Email is already taken")
+    @Column(unique = true)
     private String email;
 
     @NotBlank(message = "First name is required")
