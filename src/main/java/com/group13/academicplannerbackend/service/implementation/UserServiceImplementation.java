@@ -2,42 +2,40 @@ package com.group13.academicplannerbackend.service.implementation;
 
 import com.group13.academicplannerbackend.model.User;
 import com.group13.academicplannerbackend.model.UserMeta;
-import com.group13.academicplannerbackend.model.VerificationCode;
 import com.group13.academicplannerbackend.repository.UserMetaRepository;
 import com.group13.academicplannerbackend.repository.UserRepository;
 import com.group13.academicplannerbackend.repository.VerificationCodeRepository;
 import com.group13.academicplannerbackend.service.UserService;
-import com.group13.academicplannerbackend.util.Constants;
+import com.group13.academicplannerbackend.service.VerificationService;
+import jakarta.transaction.Transactional;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 public class UserServiceImplementation implements UserService {
     private UserRepository userRepository;
     private UserMetaRepository userMetaRepository;
     private VerificationCodeRepository verificationCodeRepository;
-    @Value("${server.port}")
-    private int serverPort;
+    private VerificationService verificationService;
 
     @Autowired
     public UserServiceImplementation(
             UserRepository userRepository,
             UserMetaRepository userMetaRepository,
-            VerificationCodeRepository verificationCodeRepository) {
+            VerificationCodeRepository verificationCodeRepository,
+            VerificationService verificationService) {
         this.userRepository = userRepository;
         this.userMetaRepository = userMetaRepository;
         this.verificationCodeRepository = verificationCodeRepository;
+        this.verificationService = verificationService;
     }
 
     /**
      * @param user
      */
     @Override
+    @Transactional
     public void register(User user) {
         String password = user.getPasswordHash();
         String passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
@@ -48,20 +46,6 @@ public class UserServiceImplementation implements UserService {
         userMeta.setUser(user);
         userMetaRepository.save(userMeta);
 
-        String code = UUID.randomUUID().toString();
-        LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(Constants.VERIFICATION_CODE_EXPIRY_MINUTES);
-        VerificationCode verificationCode = new VerificationCode(code, user.getEmail(), expiryTime);
-        verificationCodeRepository.save(verificationCode);
-
-        String verificationUrl = String.format(
-                "0.0.0.0:%d/verify?email=%s&code=%s",
-                serverPort,
-                user.getEmail(),
-                code
-        );
-        String subject = "Verify your email";
-        String body = "Please click on this link to verify your email: " + verificationUrl;
-//        emailService.sendEmail(user.getEmail(), subject, body);
-        System.out.println(user.getEmail() + "\n" + subject + "\n" + body + "\n");
+        verificationService.sendVerificationEmail(user.getEmail());
     }
 }

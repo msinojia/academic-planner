@@ -19,4 +19,9 @@ public class VerificationController {
     public void verify(@RequestParam("code") String code, @RequestParam("email") String email) {
         verificationService.verify(code, email);
     }
+
+    @GetMapping("/resend-verification")
+    public void resendVerificationEmail(@RequestParam("email") String email) {
+        verificationService.sendVerificationEmail(email);
+    }
 }
