@@ -22,6 +22,10 @@ public class VerificationCode {
         this.expiryTime = expiryTime;
     }
 
+    public VerificationCode() {
+
+    }
+
     public Long getId() {
         return id;
     }

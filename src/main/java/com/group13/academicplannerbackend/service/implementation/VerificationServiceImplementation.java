@@ -30,15 +30,6 @@ public class VerificationServiceImplementation implements VerificationService {
      */
     @Override
     public void verify(String code, String email) throws VerificationException {
-        VerificationCode verificationCode = verificationCodeRepository.findByCodeAndEmail(code, email);
-        if(verificationCode == null) {
-            throw new VerificationException("Invalid verification code");
-        }
-
-        if (verificationCode.getExpiryTime().isBefore(LocalDateTime.now())) {
-            throw new VerificationException("Verification code has expired");
-        }
-
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new VerificationException("User not found");
@@ -48,6 +39,16 @@ public class VerificationServiceImplementation implements VerificationService {
         if(userMeta.isVerified()) {
             throw new VerificationException("User is already verified");
         }
+
+        VerificationCode verificationCode = verificationCodeRepository.findByCodeAndEmail(code, email);
+        if(verificationCode == null) {
+            throw new VerificationException("Invalid verification code");
+        }
+
+        if (verificationCode.getExpiryTime().isBefore(LocalDateTime.now())) {
+            throw new VerificationException("Verification code has expired");
+        }
+
         userMeta.setVerified(true);
         userRepository.save(user);
         verificationCodeRepository.delete(verificationCode);

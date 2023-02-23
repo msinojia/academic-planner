@@ -10,6 +10,7 @@ import com.group13.academicplannerbackend.service.UserService;
 import com.group13.academicplannerbackend.util.Constants;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,6 +21,8 @@ public class UserServiceImplementation implements UserService {
     private UserRepository userRepository;
     private UserMetaRepository userMetaRepository;
     private VerificationCodeRepository verificationCodeRepository;
+    @Value("${server.port}")
+    private int serverPort;
 
     @Autowired
     public UserServiceImplementation(
@@ -50,7 +53,12 @@ public class UserServiceImplementation implements UserService {
         VerificationCode verificationCode = new VerificationCode(code, user.getEmail(), expiryTime);
         verificationCodeRepository.save(verificationCode);
 
-        String verificationUrl = "https://example.com/verify?email=" + user.getEmail() + "&code=" + code;
+        String verificationUrl = String.format(
+                "0.0.0.0:%d/verify?email=%s&code=%s",
+                serverPort,
+                user.getEmail(),
+                code
+        );
         String subject = "Verify your email";
         String body = "Please click on this link to verify your email: " + verificationUrl;
 //        emailService.sendEmail(user.getEmail(), subject, body);
