@@ -48,4 +48,47 @@ public class UserServiceImplementation implements UserService {
 
         verificationService.sendVerificationEmail(user.getEmail());
     }
+
+    @Override
+    public String loginProcess(User user) {
+
+         UserMeta userMeta = new UserMeta();
+         User tempUser;
+          tempUser =userRepository.findByEmail(user.getEmail());
+         
+         if(user.getEmail()!="")
+         {
+
+            Boolean password = BCrypt.checkpw(user.getPasswordHash(),tempUser.getPasswordHash());
+
+            if(password)
+            {
+                
+                 userMeta=userMetaRepository.findByUser(tempUser);
+              
+                 if(userMeta.isVerified()==true)
+                 {
+                   return "true";
+                 }
+                 else
+                 {
+                    return "please varify your email";
+                 }
+
+            }
+            else
+            {
+                return "Wrong username or password";
+            }
+         
+
+         }
+         else
+         {
+            return "Register First ";
+         }
+
+
+
+    }
 }
