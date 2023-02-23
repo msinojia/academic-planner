@@ -69,7 +69,8 @@ public class VerificationServiceImplementation implements VerificationService {
         if(user == null) {
             throw new UserNotFoundException(email);
         }
-        if(user.getUserMeta().isVerified()) {
+        UserMeta userMeta = user.getUserMeta();
+        if(userMeta != null && userMeta.isVerified()) {
             throw new VerificationException("User is already verified");
         }
 

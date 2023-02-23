@@ -4,6 +4,7 @@ import com.group13.academicplannerbackend.model.User;
 import com.group13.academicplannerbackend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,15 +18,7 @@ public class UserController {
     }
 
     @PostMapping("/signup")
-    public String signup(@RequestParam("firstName") String firstName,
-                         @RequestParam("lastName") String lastName,
-                         @RequestParam("email") String email,
-                         @RequestParam("password") String password) {
-        User user = new User();
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setEmail(email);
-        user.setPasswordHash(password);
+    public String signup(@RequestBody User user) {
         userService.register(user);
         return "User registered successfully.";
     }
