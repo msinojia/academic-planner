@@ -1,6 +1,7 @@
 import { Row, Col, Image, Form, Input, Button } from 'antd';
 import { fullHeight } from '../../styles';
 import Background from '../../assets/SignupBackgroundImage.jpg';
+import Title from 'antd/es/typography/Title';
 const SignupPage = () => {
   const onFinish = (formValues) => {
     console.log(formValues);
@@ -9,9 +10,11 @@ const SignupPage = () => {
     <Row style={{ width: '100%', height: '100vh' }}>
       <Col span={14}>
         <Image preview={false} src={Background} style={fullHeight} />
-        {/* <img src={'/assets/SignupBackgroundImage.jpg'} alt={''} /> */}
       </Col>
       <Col style={{ alignSelf: 'center' }}>
+        <Title style={{ textAlign: 'center', marginBottom: '30px' }} level={2}>
+          Signup
+        </Title>
         <Form
           name='sign_up_form'
           layout='vertical'
