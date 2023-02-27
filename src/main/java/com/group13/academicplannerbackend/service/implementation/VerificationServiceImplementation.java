@@ -32,6 +32,7 @@ public class VerificationServiceImplementation implements VerificationService {
             EmailService emailService) {
         this.verificationCodeRepository = verificationCodeRepository;
         this.userRepository = userRepository;
+        this.emailService = emailService;
     }
 
     /**
@@ -98,7 +99,6 @@ public class VerificationServiceImplementation implements VerificationService {
         );
         String subject = "Verify your email";
         String body = "Please click on this link to verify your email: " + verificationUrl;
-//        emailService.sendEmail(user.getEmail(), subject, body); //TODO: Send email instead of printing
-        System.out.println(user.getEmail() + "\n" + subject + "\n" + body + "\n");
+        emailService.sendEmail(user.getEmail(), subject, body);
     }
 }
