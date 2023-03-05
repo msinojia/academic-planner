@@ -3,11 +3,13 @@ import { fullHeight } from '../../styles';
 import Background from '../../assets/SignupBackgroundImage.jpg';
 import { useNavigate } from 'react-router-dom';
 import Title from 'antd/es/typography/Title';
+import { loginRequest } from './api';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const onFinish = (formValues) => {
-    console.log(formValues);
+    console.log({ ...formValues, passwordHash: formValues.password });
+    loginRequest({ ...formValues, passwordHash: formValues.password });
   };
   return (
     <Row style={{ width: '100%', height: '100vh' }}>
@@ -39,7 +41,7 @@ const LoginPage = () => {
 
           <Form.Item
             label='Password'
-            name='password'
+            name='passwordHash'
             rules={[{ required: true, message: 'Please input your password!' }]}
           >
             <Input.Password placeholder='Enter Password' />
@@ -48,7 +50,7 @@ const LoginPage = () => {
             <Col span={9}>
               <Form.Item>
                 <Button type='primary' htmlType='submit'>
-                  Create
+                  Login
                 </Button>
               </Form.Item>
             </Col>

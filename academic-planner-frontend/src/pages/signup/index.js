@@ -2,9 +2,11 @@ import { Row, Col, Image, Form, Input, Button } from 'antd';
 import { fullHeight } from '../../styles';
 import Background from '../../assets/SignupBackgroundImage.jpg';
 import Title from 'antd/es/typography/Title';
+import { sigupnRequest } from './api';
 const SignupPage = () => {
   const onFinish = (formValues) => {
-    console.log(formValues);
+    console.log({ ...formValues, passwordHash: formValues.password });
+    sigupnRequest({ ...formValues, passwordHash: formValues.password });
   };
   return (
     <Row style={{ width: '100%', height: '100vh' }}>
