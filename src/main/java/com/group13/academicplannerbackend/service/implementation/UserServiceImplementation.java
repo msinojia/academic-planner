@@ -52,43 +52,29 @@ public class UserServiceImplementation implements UserService {
     @Override
     public String loginProcess(User user) {
 
-         UserMeta userMeta = new UserMeta();
-         User tempUser;
-          tempUser =userRepository.findByEmail(user.getEmail());
-         
-         if(user.getEmail()!="")
-         {
+        UserMeta userMeta = new UserMeta();
+        User tempUser;
+        tempUser = userRepository.findByEmail(user.getEmail());
 
-            Boolean password = BCrypt.checkpw(user.getPasswordHash(),tempUser.getPasswordHash());
+        if (user.getEmail() != "") {
 
-            if(password)
-            {
-                
-                 userMeta=userMetaRepository.findByUser(tempUser);
-              
-                 if(userMeta.isVerified()==true)
-                 {
-                   return "true";
-                 }
-                 else
-                 {
+            Boolean password = BCrypt.checkpw(user.getPasswordHash(), tempUser.getPasswordHash());
+
+            if (password) {
+
+                userMeta = userMetaRepository.findByUser(tempUser);
+
+                if (userMeta.isVerified() == true) {
+                    return "true";
+                } else {
                     return "please varify your email";
-                 }
+                }
 
-            }
-            else
-            {
+            } else {
                 return "Wrong username or password";
             }
-         
-
-         }
-         else
-         {
+        } else {
             return "Register First ";
-         }
-
-
-
+        }
     }
 }
