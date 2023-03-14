@@ -8,12 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class VerificationController {
-    private VerificationService verificationService;
 
     @Autowired
-    public VerificationController(VerificationService verificationService) {
-        this.verificationService = verificationService;
-    }
+    private VerificationService verificationService;
 
     @GetMapping("/verify")
     public void verify(@RequestParam("code") String code, @RequestParam("email") String email) {
