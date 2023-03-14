@@ -6,8 +6,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
 public class UserMeta {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -19,36 +23,4 @@ public class UserMeta {
 
     private boolean verified;
     private String profileStatus;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public boolean isVerified() {
-        return verified;
-    }
-
-    public void setVerified(boolean verified) {
-        this.verified = verified;
-    }
-
-    public String getProfileStatus() {
-        return profileStatus;
-    }
-
-    public void setProfileStatus(String profileStatus) {
-        this.profileStatus = profileStatus;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
 }
