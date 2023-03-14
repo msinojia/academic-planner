@@ -1,7 +1,6 @@
 package com.group13.academicplannerbackend.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 
