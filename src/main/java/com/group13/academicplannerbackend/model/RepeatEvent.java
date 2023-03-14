@@ -1,19 +1,19 @@
 package com.group13.academicplannerbackend.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
 @Entity
-public class RepeatEvent {
+public class RepeatEvent implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @OneToOne
     @JoinColumn(name = "event_id")
-    private Event event;
+    private FixedEvent event;
 
     @Enumerated(EnumType.STRING)
     private RepititionType repititionType;
@@ -29,11 +29,11 @@ public class RepeatEvent {
         this.id = id;
     }
 
-    public Event getEvent() {
+    public FixedEvent getEvent() {
         return event;
     }
 
-    public void setEvent(Event event) {
+    public void setEvent(FixedEvent event) {
         this.event = event;
     }
 
