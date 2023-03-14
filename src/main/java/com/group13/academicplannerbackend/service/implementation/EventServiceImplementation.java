@@ -1,10 +1,8 @@
 package com.group13.academicplannerbackend.service.implementation;
 
-import com.group13.academicplannerbackend.model.Event;
-import com.group13.academicplannerbackend.model.EventDTO;
-import com.group13.academicplannerbackend.model.RepeatEvent;
-import com.group13.academicplannerbackend.model.RepititionType;
+import com.group13.academicplannerbackend.model.*;
 import com.group13.academicplannerbackend.repository.EventRepository;
+import com.group13.academicplannerbackend.repository.VariableEventRepository;
 import com.group13.academicplannerbackend.service.EventService;
 import org.apache.commons.lang3.SerializationUtils;
 import org.modelmapper.ModelMapper;
@@ -20,11 +18,15 @@ import java.util.stream.Collectors;
 @Service
 public class EventServiceImplementation implements EventService {
     private EventRepository eventRepository;
+    private VariableEventRepository variableEventRepository;
     private ModelMapper modelMapper;
 
     @Autowired
-    public EventServiceImplementation(EventRepository eventRepository, ModelMapper modelMapper) {
+    public EventServiceImplementation(EventRepository eventRepository,
+                                      VariableEventRepository variableEventRepository,
+                                      ModelMapper modelMapper) {
         this.eventRepository = eventRepository;
+        this.variableEventRepository = variableEventRepository;
         this.modelMapper = modelMapper;
     }
 
@@ -77,5 +79,13 @@ public class EventServiceImplementation implements EventService {
                 .map(event -> modelMapper.map(event, EventDTO.class))
                 .collect(Collectors.toList());
         return eventDTOs;
+    }
+
+    /**
+     * @param variableEvent
+     */
+    @Override
+    public void createVariableEvent(VariableEvent variableEvent) {
+        variableEventRepository.save(variableEvent);
     }
 }
