@@ -13,7 +13,7 @@ public class RepeatEvent implements Serializable {
 
     @OneToOne
     @JoinColumn(name = "event_id")
-    private Event event;
+    private FixedEvent event;
 
     @Enumerated(EnumType.STRING)
     private RepititionType repititionType;
@@ -29,11 +29,11 @@ public class RepeatEvent implements Serializable {
         this.id = id;
     }
 
-    public Event getEvent() {
+    public FixedEvent getEvent() {
         return event;
     }
 
-    public void setEvent(Event event) {
+    public void setEvent(FixedEvent event) {
         this.event = event;
     }
 

@@ -1,7 +1,8 @@
 package com.group13.academicplannerbackend.controller;
 
-import com.group13.academicplannerbackend.model.Event;
+import com.group13.academicplannerbackend.model.FixedEvent;
 import com.group13.academicplannerbackend.model.EventDTO;
+import com.group13.academicplannerbackend.model.VariableEvent;
 import com.group13.academicplannerbackend.service.EventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,10 +22,17 @@ public class EventController {
     }
 
     @CrossOrigin
-    @PostMapping
-    public String createEvent(@RequestBody Event event) {
-        eventService.createEvent(event);
-        return "Event created successfully";
+    @PostMapping("/fixed")
+    public String createFixedEvent(@RequestBody FixedEvent fixedEvent) {
+        eventService.createFixedEvent(fixedEvent);
+        return "FixedEvent created successfully";
+    }
+
+    @CrossOrigin
+    @PostMapping("/variable")
+    public String createVariableEvent(@RequestBody VariableEvent variableEvent) {
+        eventService.createVariableEvent(variableEvent);
+        return "Variable Event created successfully";
     }
 
     @CrossOrigin
