@@ -3,13 +3,17 @@ package com.group13.academicplannerbackend.service.implementation;
 import com.group13.academicplannerbackend.model.Event;
 import com.group13.academicplannerbackend.model.EventDTO;
 import com.group13.academicplannerbackend.model.RepeatEvent;
+import com.group13.academicplannerbackend.model.RepititionType;
 import com.group13.academicplannerbackend.repository.EventRepository;
 import com.group13.academicplannerbackend.service.EventService;
+import org.apache.commons.lang3.SerializationUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.Period;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,8 +46,33 @@ public class EventServiceImplementation implements EventService {
      */
     @Override
     public List<EventDTO> getEvents(LocalDate firstDate, LocalDate secondDate) {
-//        List<Event> events = eventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(firstDate, secondDate);
-        List<Event> events = eventRepository.findAllRepeatingByEndDateGreaterThanDate(firstDate);
+        List<Event> events = eventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(firstDate, secondDate);
+        List<Event> repeatingEvents = eventRepository.findAllRepeatingByEndDateGreaterThanDate(firstDate);
+
+        for(Event e : repeatingEvents) {
+            RepititionType repititionType = e.getRepeatEvent().getRepititionType();
+
+            LocalDate date1 = (e.getStartDate().isAfter(firstDate)) ? e.getStartDate() : firstDate;
+            LocalDate date2 = (e.getRepeatEvent().getEndDate().isBefore(secondDate))
+                    ? e.getRepeatEvent().getEndDate() : secondDate;
+
+            int daysDifferenceBetweenStartAndEndDate = Period.between(e.getStartDate(), e.getEndDate()).getDays();
+
+            int daysDifferenceBetweenDate1AndDate2 = Period.between(date1, date2).getDays();
+
+            for (int i = 0; i <= daysDifferenceBetweenDate1AndDate2; i++) {
+                if(repititionType == RepititionType.DAILY
+                        || (repititionType == RepititionType.WEEKLY
+                        && e.getRepeatEvent().getWeeklyRepeatDays()[date1.plusDays(i).getDayOfWeek().getValue()%7])
+                ) {
+                    Event clonedEvent = SerializationUtils.clone(e);
+                    clonedEvent.setStartDate(date1.plusDays(i));
+                    clonedEvent.setEndDate(date1.plusDays(i).plusDays(daysDifferenceBetweenStartAndEndDate));
+                    events.add(clonedEvent);
+                }
+                }
+        }
+
         List<EventDTO> eventDTOs = events.stream()
                 .map(event -> modelMapper.map(event, EventDTO.class))
                 .collect(Collectors.toList());

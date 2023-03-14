@@ -2,10 +2,11 @@ package com.group13.academicplannerbackend.model;
 
 import jakarta.persistence.*;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
 @Entity
-public class RepeatEvent {
+public class RepeatEvent implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
