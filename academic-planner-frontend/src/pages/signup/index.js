@@ -1,12 +1,17 @@
-import { Row, Col, Image, Form, Input, Button } from 'antd';
+import { Row, Col, Image, Form, Input, Button, message } from 'antd';
 import { fullHeight } from '../../styles';
 import Background from '../../assets/SignupBackgroundImage.jpg';
 import Title from 'antd/es/typography/Title';
 import { sigupnRequest } from './api';
+import { useNavigate } from 'react-router-dom';
 const SignupPage = () => {
+  const navigate = useNavigate();
+
   const onFinish = (formValues) => {
     console.log({ ...formValues, passwordHash: formValues.password });
     sigupnRequest({ ...formValues, passwordHash: formValues.password });
+    message.success('User Created Successfully');
+    navigate('/login');
   };
   return (
     <Row style={{ width: '100%', height: '100vh' }}>
@@ -107,11 +112,29 @@ const SignupPage = () => {
           >
             <Input.Password placeholder='Re-enter Password' />
           </Form.Item>
-          <Form.Item>
-            <Button type='primary' htmlType='submit' style={{ width: '40%' }}>
-              Create
-            </Button>
-          </Form.Item>
+          <Row justify='space-between'>
+            <Col span={13}>
+              <Form.Item>
+                <Button
+                  type='primary'
+                  htmlType='submit'
+                  style={{ width: '40%' }}
+                >
+                  Create
+                </Button>
+              </Form.Item>
+            </Col>
+            <Col span={11}>
+              <Button
+                type='link'
+                onClick={() => {
+                  navigate('/login');
+                }}
+              >
+                Already have an account!
+              </Button>
+            </Col>
+          </Row>
         </Form>
       </Col>
     </Row>

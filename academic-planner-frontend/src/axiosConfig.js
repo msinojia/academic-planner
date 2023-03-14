@@ -1,9 +1,11 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 // import useAuthStore from '../hooks/useAuthStore';
 
 const axiosInstance = axios.create({
   baseURL: `${'http://localhost:8080'}`,
   headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
   },
 });
