@@ -6,14 +6,17 @@ import com.group13.academicplannerbackend.model.VariableEvent;
 import com.group13.academicplannerbackend.service.EventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/event")
 public class EventController {
+    @Autowired
     private EventService eventService;
 
     @Autowired
@@ -23,16 +26,16 @@ public class EventController {
 
     @CrossOrigin
     @PostMapping("/fixed")
-    public String createFixedEvent(@RequestBody FixedEvent fixedEvent) {
+    public ResponseEntity<String> createFixedEvent(@RequestBody FixedEvent fixedEvent) {
         eventService.createFixedEvent(fixedEvent);
-        return "FixedEvent created successfully";
+        return ResponseEntity.ok("FixedEvent created successfully");
     }
 
     @CrossOrigin
     @PostMapping("/variable")
-    public String createVariableEvent(@RequestBody VariableEvent variableEvent) {
+    public ResponseEntity<String> createVariableEvent(@RequestBody VariableEvent variableEvent) {
         eventService.createVariableEvent(variableEvent);
-        return "Variable Event created successfully";
+        return ResponseEntity.ok("Variable Event created successfully");
     }
 
     @CrossOrigin
