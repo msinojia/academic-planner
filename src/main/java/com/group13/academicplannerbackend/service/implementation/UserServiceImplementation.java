@@ -1,10 +1,11 @@
 package com.group13.academicplannerbackend.service.implementation;
 
+import com.group13.academicplannerbackend.exception.UnAuthorizedUserException;
+import com.group13.academicplannerbackend.exception.VerificationException;
 import com.group13.academicplannerbackend.model.User;
 import com.group13.academicplannerbackend.model.UserMeta;
 import com.group13.academicplannerbackend.repository.UserMetaRepository;
 import com.group13.academicplannerbackend.repository.UserRepository;
-import com.group13.academicplannerbackend.repository.VerificationCodeRepository;
 import com.group13.academicplannerbackend.service.UserService;
 import com.group13.academicplannerbackend.service.VerificationService;
 import jakarta.transaction.Transactional;
@@ -16,18 +17,15 @@ import org.springframework.stereotype.Service;
 public class UserServiceImplementation implements UserService {
     private UserRepository userRepository;
     private UserMetaRepository userMetaRepository;
-    private VerificationCodeRepository verificationCodeRepository;
     private VerificationService verificationService;
 
     @Autowired
     public UserServiceImplementation(
             UserRepository userRepository,
             UserMetaRepository userMetaRepository,
-            VerificationCodeRepository verificationCodeRepository,
             VerificationService verificationService) {
         this.userRepository = userRepository;
         this.userMetaRepository = userMetaRepository;
-        this.verificationCodeRepository = verificationCodeRepository;
         this.verificationService = verificationService;
     }
 
@@ -50,7 +48,7 @@ public class UserServiceImplementation implements UserService {
     }
 
     @Override
-    public String loginProcess(User user) {
+    public String loginProcess(User user) throws UnAuthorizedUserException {
 
         UserMeta userMeta = new UserMeta();
         User tempUser;
@@ -65,16 +63,16 @@ public class UserServiceImplementation implements UserService {
                 userMeta = userMetaRepository.findByUser(tempUser);
 
                 if (userMeta.isVerified() == true) {
-                    return "true";
+                    return "true"; // return JWT token here
                 } else {
-                    return "please varify your email";
+                    throw new VerificationException("please varify your email");
                 }
 
             } else {
-                return "Wrong username or password";
+                throw new UnAuthorizedUserException("Wrong username or password");
             }
         } else {
-            return "Register First ";
+            throw new UnAuthorizedUserException("Wrong username or password");
         }
     }
 }

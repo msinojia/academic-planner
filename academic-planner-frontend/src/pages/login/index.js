@@ -7,9 +7,9 @@ import { loginRequest } from './api';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const onFinish = (formValues) => {
-    console.log({ ...formValues, passwordHash: formValues.password });
-    loginRequest({ ...formValues, passwordHash: formValues.password });
+  const onFinish = async (formValues) => {
+    console.log(await loginRequest(formValues));
+    // navigate('/profile-setup');
   };
   return (
     <Row style={{ width: '100%', height: '100vh' }}>
