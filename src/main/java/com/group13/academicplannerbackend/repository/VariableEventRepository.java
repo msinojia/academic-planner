@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface VariableEventRepository extends JpaRepository<VariableEvent, Long> {
+    VariableEvent findById(long id);
 }

@@ -16,4 +16,7 @@ public interface FixedEventRepository extends JpaRepository<FixedEvent, Long> {
 
     @Query("SELECT e FROM FixedEvent e WHERE e.isRepeat=true AND e.repeatEvent.endDate >= :date")
     List<FixedEvent> findAllRepeatingByEndDateGreaterThanDate(@Param("date") LocalDate date);
+
+    FixedEvent findById(long id);
+    void deleteFixedEventById(long id);
 }
