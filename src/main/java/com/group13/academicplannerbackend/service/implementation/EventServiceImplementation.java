@@ -1,5 +1,6 @@
 package com.group13.academicplannerbackend.service.implementation;
 
+import com.fasterxml.jackson.databind.introspect.DefaultAccessorNamingStrategy.FirstCharBasedValidator;
 import com.group13.academicplannerbackend.model.*;
 import com.group13.academicplannerbackend.repository.FixedEventRepository;
 import com.group13.academicplannerbackend.repository.VariableEventRepository;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,7 +34,7 @@ public class EventServiceImplementation implements EventService {
     /**
      * @param fixedEvent
      */
-    @Override
+    @Override                                          
     public void createFixedEvent(FixedEvent fixedEvent) {
         if(fixedEvent.isRepeat()) {
             RepeatEvent repeatEvent = fixedEvent.getRepeatEvent();
@@ -40,6 +42,47 @@ public class EventServiceImplementation implements EventService {
             fixedEvent.setRepeatEvent(repeatEvent);
         }
         fixedEventRepository.save(fixedEvent);
+    }
+
+    @Override                                        
+    public UpdateEventStatus updateFixedEvent(FixedEvent fixedEvent) {
+            FixedEvent checkInsideDB=fixedEventRepository.findById(fixedEvent.getId()).orElse(null);
+            if(checkInsideDB!=null )
+            { 
+                if(checkInsideDB.isReschedulable())
+                {
+                    if(fixedEvent.isRepeat()) {
+                        RepeatEvent repeatEvent = fixedEvent.getRepeatEvent();
+                        repeatEvent.setEvent(fixedEvent);
+                        fixedEvent.setRepeatEvent(repeatEvent);
+                    }
+                    fixedEventRepository.save(fixedEvent);
+                    return UpdateEventStatus.SUCCESS;
+                }
+                else{
+                    return UpdateEventStatus.NOT_RESCHEDULABLE;
+                }
+            }
+            else
+            {
+                return UpdateEventStatus.NOT_FOUND;
+            }
+           
+    }
+
+    @Override                                          
+    public boolean deleteFixedEvent(Long id) {
+        FixedEvent checkInsideDB=fixedEventRepository.findById(id).orElse(null);
+        if(checkInsideDB!=null)
+        {
+            fixedEventRepository.deleteById(id);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+      
     }
 
     /**
@@ -86,5 +129,35 @@ public class EventServiceImplementation implements EventService {
     @Override
     public void createVariableEvent(VariableEvent variableEvent) {
         variableEventRepository.save(variableEvent);
+    }
+
+    @Override
+    public UpdateEventStatus updateVariableEvent(VariableEvent variableEvent) {
+        VariableEvent checkInsideDB=variableEventRepository.findById(variableEvent.getId()).orElse(null);
+        if(checkInsideDB!=null )
+        { 
+            variableEventRepository.save(variableEvent);
+            return UpdateEventStatus.SUCCESS;
+        }
+        else
+        {
+            return UpdateEventStatus.NOT_FOUND;
+        }
+       
+    }
+
+    @Override                                          
+    public boolean deleteVariableEvent(Long id) {
+        VariableEvent checkInsideDB=variableEventRepository.findById(id).orElse(null);
+        if(checkInsideDB!=null)
+        {
+            variableEventRepository.deleteById(id);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+      
     }
 }
