@@ -1,7 +1,7 @@
 import { Button } from 'antd';
 import Title from 'antd/es/typography/Title';
 import React, { useState } from 'react';
-import SetupEssential from './setupEssential';
+import SetupEssential from './setupEssentials';
 import SetupJob from './setupJob';
 import SetupLectLab from './setupLectLab';
 import SetupPersonalActivity from './setupPersonalActivity';
