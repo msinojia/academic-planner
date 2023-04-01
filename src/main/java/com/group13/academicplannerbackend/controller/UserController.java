@@ -1,5 +1,6 @@
 package com.group13.academicplannerbackend.controller;
 
+import com.group13.academicplannerbackend.model.JwtResponse;
 import com.group13.academicplannerbackend.model.User;
 import com.group13.academicplannerbackend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +27,9 @@ public class UserController {
 
     @CrossOrigin
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody User user) {
-
-        return ResponseEntity.ok(userService.loginProcess(user));
-
+    public ResponseEntity<JwtResponse> login(@RequestBody User user) {
+       String jwtToken = userService.loginProcess(user);
+       JwtResponse jwtResponse = new JwtResponse(jwtToken);
+       return ResponseEntity.ok(jwtResponse);
     }
 }

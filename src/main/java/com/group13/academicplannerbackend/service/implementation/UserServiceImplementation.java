@@ -8,6 +8,7 @@ import com.group13.academicplannerbackend.repository.UserMetaRepository;
 import com.group13.academicplannerbackend.repository.UserRepository;
 import com.group13.academicplannerbackend.service.UserService;
 import com.group13.academicplannerbackend.service.VerificationService;
+import com.group13.academicplannerbackend.util.Constants;
 import com.group13.academicplannerbackend.util.JWTUtil;
 import javax.transaction.Transactional;
 import org.mindrot.jbcrypt.BCrypt;
@@ -68,7 +69,7 @@ public class UserServiceImplementation implements UserService, UserDetailsServic
 
                 if (userMeta.isVerified() == true) {
                     UserDetails userDetails = (UserDetails) tempUser;
-                    String jwtToken = jwtUtil.generateToken(userDetails);
+                    String jwtToken = Constants.JWT_TOKEN_PREFIX + jwtUtil.generateToken(userDetails);
                     return jwtToken;
                 } else {
                     throw new VerificationException("please varify your email");
