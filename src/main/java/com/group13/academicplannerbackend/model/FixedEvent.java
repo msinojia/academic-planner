@@ -33,5 +33,7 @@ public class FixedEvent implements Serializable {
     @OneToOne(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private RepeatEvent repeatEvent;
 
-    
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }
