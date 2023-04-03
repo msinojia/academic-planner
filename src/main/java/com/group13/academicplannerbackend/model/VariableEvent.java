@@ -28,4 +28,8 @@ public class VariableEvent {
     private Duration duration;
 
     private LocalDateTime deadline;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }
