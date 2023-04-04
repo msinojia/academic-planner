@@ -1,8 +1,8 @@
 package com.group13.academicplannerbackend.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import lombok.Data;
 
 import java.time.LocalDate;

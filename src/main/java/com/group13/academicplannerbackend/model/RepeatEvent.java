@@ -1,6 +1,6 @@
 package com.group13.academicplannerbackend.model;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 
 import java.io.Serializable;
 import java.time.LocalDate;
