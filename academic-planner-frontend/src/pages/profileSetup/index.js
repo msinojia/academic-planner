@@ -5,8 +5,11 @@ import SetupEssential from './setupEssentials';
 import SetupJob from './setupJob';
 import SetupLectLab from './setupLectLab';
 import SetupPersonalActivity from './setupPersonalActivity';
+import { authApi } from '../../axiosConfig';
 
 const ProfieSetup = () => {
+  authApi.checkAuthentication()
+
   const [currentStep, setCurrentStep] = useState(1);
 
   const handleNext = () => {
@@ -27,6 +30,7 @@ const ProfieSetup = () => {
         return <></>;
     }
   };
+
   return (
     <div>
       <Title level={2}>Profile Setup</Title>

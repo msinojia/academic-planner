@@ -5,7 +5,8 @@ import org.springframework.http.HttpStatus;
 public enum UpdateEventStatus {
     SUCCESS(HttpStatus.OK),
     NOT_RESCHEDULABLE(HttpStatus.BAD_REQUEST),
-    NOT_FOUND(HttpStatus.NOT_FOUND);
+    NOT_FOUND(HttpStatus.NOT_FOUND),
+    NOT_AUTHORIZED(HttpStatus.FORBIDDEN);
 
     private final HttpStatus httpStatus;
 
@@ -17,5 +18,3 @@ public enum UpdateEventStatus {
         return httpStatus;
     }
 }
-    
-

@@ -3,6 +3,7 @@ package com.group13.academicplannerbackend.service.implementation;
 import com.fasterxml.jackson.databind.introspect.DefaultAccessorNamingStrategy.FirstCharBasedValidator;
 import com.group13.academicplannerbackend.model.*;
 import com.group13.academicplannerbackend.repository.FixedEventRepository;
+import com.group13.academicplannerbackend.repository.UserRepository;
 import com.group13.academicplannerbackend.repository.VariableEventRepository;
 import com.group13.academicplannerbackend.service.EventService;
 import org.apache.commons.lang3.SerializationUtils;
@@ -10,6 +11,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
@@ -20,14 +22,17 @@ import java.util.stream.Collectors;
 public class EventServiceImplementation implements EventService {
     private FixedEventRepository fixedEventRepository;
     private VariableEventRepository variableEventRepository;
+    private UserRepository userRepository;
     private ModelMapper modelMapper;
 
     @Autowired
     public EventServiceImplementation(FixedEventRepository fixedEventRepository,
                                       VariableEventRepository variableEventRepository,
+                                      UserRepository userRepository,
                                       ModelMapper modelMapper) {
         this.fixedEventRepository = fixedEventRepository;
         this.variableEventRepository = variableEventRepository;
+        this.userRepository = userRepository;
         this.modelMapper = modelMapper;
     }
 
@@ -35,63 +40,76 @@ public class EventServiceImplementation implements EventService {
      * @param fixedEvent
      */
     @Override                                          
-    public void createFixedEvent(FixedEvent fixedEvent) {
+    public void createFixedEvent(FixedEvent fixedEvent, Principal principal) {
         if(fixedEvent.isRepeat()) {
             RepeatEvent repeatEvent = fixedEvent.getRepeatEvent();
             repeatEvent.setEvent(fixedEvent);
             fixedEvent.setRepeatEvent(repeatEvent);
         }
+        User user = userRepository.findByEmail(principal.getName());
+        fixedEvent.setUser(user);
         fixedEventRepository.save(fixedEvent);
     }
 
     @Override                                        
-    public UpdateEventStatus updateFixedEvent(FixedEvent fixedEvent) {
-            FixedEvent checkInsideDB=fixedEventRepository.findById(fixedEvent.getId()).orElse(null);
-            if(checkInsideDB!=null )
-            { 
-                if(checkInsideDB.isReschedulable())
-                {
-                    if(fixedEvent.isRepeat()) {
-                        RepeatEvent repeatEvent = fixedEvent.getRepeatEvent();
-                        repeatEvent.setEvent(fixedEvent);
-                        fixedEvent.setRepeatEvent(repeatEvent);
-                    }
-                    fixedEventRepository.save(fixedEvent);
-                    return UpdateEventStatus.SUCCESS;
-                }
-                else{
-                    return UpdateEventStatus.NOT_RESCHEDULABLE;
-                }
-            }
-            else
-            {
-                return UpdateEventStatus.NOT_FOUND;
-            }
-           
-    }
-
-    @Override                                          
-    public boolean deleteFixedEvent(Long id) {
-        FixedEvent checkInsideDB=fixedEventRepository.findById(id).orElse(null);
-        if(checkInsideDB!=null)
+    public UpdateEventStatus updateFixedEvent(FixedEvent fixedEvent, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName());
+        FixedEvent checkInsideDB=fixedEventRepository.findById(fixedEvent.getId()).orElse(null);
+        if(checkInsideDB!=null )
         {
-            fixedEventRepository.deleteById(id);
-            return true;
+            // Check if the user is authorized to update the event
+            if (!user.getId().equals(checkInsideDB.getUser().getId())) {
+                return UpdateEventStatus.NOT_AUTHORIZED;
+            }
+
+            if(checkInsideDB.isReschedulable())
+            {
+                if(fixedEvent.isRepeat()) {
+                    RepeatEvent repeatEvent = fixedEvent.getRepeatEvent();
+                    repeatEvent.setEvent(fixedEvent);
+                    fixedEvent.setRepeatEvent(repeatEvent);
+                    fixedEvent.setUser(user);
+                }
+                fixedEventRepository.save(fixedEvent);
+                return UpdateEventStatus.SUCCESS;
+            }
+            else{
+                return UpdateEventStatus.NOT_RESCHEDULABLE;
+            }
         }
         else
         {
-            return false;
+            return UpdateEventStatus.NOT_FOUND;
         }
-      
+    }
+
+    @Override                                          
+    public DeleteEventStatus deleteFixedEvent(Long id, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName());
+        FixedEvent checkInsideDB=fixedEventRepository.findById(id).orElse(null);
+        if(checkInsideDB!=null)
+        {
+            // Check if the user is authorized to update the event
+            if (!user.getId().equals(checkInsideDB.getUser().getId())) {
+                return DeleteEventStatus.NOT_AUTHORIZED;
+            }
+
+            fixedEventRepository.deleteById(id);
+            return DeleteEventStatus.SUCCESS;
+        }
+        else
+        {
+            return DeleteEventStatus.NOT_FOUND;
+        }
     }
 
     /**
      * @return 
      */
     @Override
-    public List<EventDTO> getEvents(LocalDate firstDate, LocalDate secondDate) {
-        List<FixedEvent> events = fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(firstDate, secondDate);
-        List<FixedEvent> repeatingEvents = fixedEventRepository.findAllRepeatingByEndDateGreaterThanDate(firstDate);
+    public List<EventDTO> getEvents(LocalDate firstDate, LocalDate secondDate, Principal principal) {
+        List<FixedEvent> events = fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(firstDate, secondDate, principal.getName());
+        List<FixedEvent> repeatingEvents = fixedEventRepository.findAllRepeatingByEndDateGreaterThanDate(firstDate, principal.getName());
 
         for(FixedEvent e : repeatingEvents) {
             RepititionType repititionType = e.getRepeatEvent().getRepititionType();
@@ -127,15 +145,21 @@ public class EventServiceImplementation implements EventService {
      * @param variableEvent
      */
     @Override
-    public void createVariableEvent(VariableEvent variableEvent) {
+    public void createVariableEvent(VariableEvent variableEvent, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName());
+        variableEvent.setUser(user);
         variableEventRepository.save(variableEvent);
     }
 
     @Override
-    public UpdateEventStatus updateVariableEvent(VariableEvent variableEvent) {
+    public UpdateEventStatus updateVariableEvent(VariableEvent variableEvent, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName());
         VariableEvent checkInsideDB=variableEventRepository.findById(variableEvent.getId()).orElse(null);
-        if(checkInsideDB!=null )
-        { 
+        if(checkInsideDB!=null)
+        {
+            if (!user.getId().equals(checkInsideDB.getUser().getId())) {
+                return UpdateEventStatus.NOT_AUTHORIZED;
+            }
             variableEventRepository.save(variableEvent);
             return UpdateEventStatus.SUCCESS;
         }
@@ -147,16 +171,20 @@ public class EventServiceImplementation implements EventService {
     }
 
     @Override                                          
-    public boolean deleteVariableEvent(Long id) {
+    public DeleteEventStatus deleteVariableEvent(Long id, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName());
         VariableEvent checkInsideDB=variableEventRepository.findById(id).orElse(null);
         if(checkInsideDB!=null)
         {
+            if (!user.getId().equals(checkInsideDB.getUser().getId())) {
+                return DeleteEventStatus.NOT_AUTHORIZED;
+            }
             variableEventRepository.deleteById(id);
-            return true;
+            return DeleteEventStatus.SUCCESS;
         }
         else
         {
-            return false;
+            return DeleteEventStatus.NOT_FOUND;
         }
       
     }

@@ -8,7 +8,9 @@ import { loginRequest } from './api';
 const LoginPage = () => {
   const navigate = useNavigate();
   const onFinish = async (formValues) => {
-    console.log(await loginRequest(formValues));
+    const response = await loginRequest(formValues);
+    const token = response.data.token;
+    localStorage.setItem('jwtToken', token);
     // navigate('/profile-setup');
   };
   return (

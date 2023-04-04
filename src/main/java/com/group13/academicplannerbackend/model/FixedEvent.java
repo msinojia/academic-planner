@@ -1,7 +1,7 @@
 package com.group13.academicplannerbackend.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -33,5 +33,7 @@ public class FixedEvent implements Serializable {
     @OneToOne(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private RepeatEvent repeatEvent;
 
-    
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }
