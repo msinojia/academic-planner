@@ -25,4 +25,6 @@ public class EventDTO {
     private boolean isRepeat;
     @Enumerated(EnumType.STRING)
     private EventCategory eventCategory;
+    @Enumerated(EnumType.STRING)
+    private EventType eventType;
 }
