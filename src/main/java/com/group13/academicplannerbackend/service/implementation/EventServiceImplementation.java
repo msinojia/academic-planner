@@ -12,8 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
-import java.time.LocalDate;
-import java.time.Period;
+import java.time.*;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -104,44 +105,6 @@ public class EventServiceImplementation implements EventService {
     }
 
     /**
-     * @return 
-     */
-    @Override
-    public List<EventDTO> getEvents(LocalDate firstDate, LocalDate secondDate, Principal principal) {
-        List<FixedEvent> events = fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(firstDate, secondDate, principal.getName());
-        List<FixedEvent> repeatingEvents = fixedEventRepository.findAllRepeatingByEndDateGreaterThanDate(firstDate, principal.getName());
-
-        for(FixedEvent e : repeatingEvents) {
-            RepititionType repititionType = e.getRepeatEvent().getRepititionType();
-
-            LocalDate date1 = (e.getStartDate().isAfter(firstDate)) ? e.getStartDate() : firstDate;
-            LocalDate date2 = (e.getRepeatEvent().getEndDate().isBefore(secondDate))
-                    ? e.getRepeatEvent().getEndDate() : secondDate;
-
-            int daysDifferenceBetweenStartAndEndDate = Period.between(e.getStartDate(), e.getEndDate()).getDays();
-
-            int daysDifferenceBetweenDate1AndDate2 = Period.between(date1, date2).getDays();
-
-            for (int i = 0; i <= daysDifferenceBetweenDate1AndDate2; i++) {
-                if(repititionType == RepititionType.DAILY
-                        || (repititionType == RepititionType.WEEKLY
-                        && e.getRepeatEvent().getWeeklyRepeatDays()[date1.plusDays(i).getDayOfWeek().getValue()%7])
-                ) {
-                    FixedEvent clonedFixedEvent = SerializationUtils.clone(e);
-                    clonedFixedEvent.setStartDate(date1.plusDays(i));
-                    clonedFixedEvent.setEndDate(date1.plusDays(i).plusDays(daysDifferenceBetweenStartAndEndDate));
-                    events.add(clonedFixedEvent);
-                }
-                }
-        }
-
-        List<EventDTO> eventDTOs = events.stream()
-                .map(event -> modelMapper.map(event, EventDTO.class))
-                .collect(Collectors.toList());
-        return eventDTOs;
-    }
-
-    /**
      * @param variableEvent
      */
     @Override
@@ -187,5 +150,103 @@ public class EventServiceImplementation implements EventService {
             return DeleteEventStatus.NOT_FOUND;
         }
       
+    }
+
+    /**
+     * @return
+     */
+    @Override
+    public List<EventDTO> getEvents(LocalDate firstDate, LocalDate secondDate, Principal principal) {
+        List<EventDTO> eventDTOs = getFixedEvents(firstDate, secondDate, principal);
+        List<VariableEvent> variableEvents = variableEventRepository.findAllByUserEmail(principal.getName());
+
+        // Sort variable events by deadline
+        variableEvents.sort(Comparator.comparing(VariableEvent::getDeadline));
+
+        // Find free time slots and schedule variable events
+        for (VariableEvent variableEvent : variableEvents) {
+            LocalDateTime scheduledStartTime = findStartTimeForVariableEvent(variableEvent, eventDTOs, firstDate, secondDate);
+            if (scheduledStartTime != null) {
+                EventDTO scheduledVariableEvent = modelMapper.map(variableEvent, EventDTO.class);
+                scheduledVariableEvent.setStartDate(scheduledStartTime.toLocalDate());
+                scheduledVariableEvent.setStartTime(scheduledStartTime.toLocalTime());
+                scheduledVariableEvent.setEndDate(scheduledStartTime.plus(variableEvent.getDuration()).toLocalDate());
+                scheduledVariableEvent.setEndTime(scheduledStartTime.plus(variableEvent.getDuration()).toLocalTime());
+                scheduledVariableEvent.setReschedulable(true);
+                scheduledVariableEvent.setEventType(EventType.VARIABLE);
+                eventDTOs.add(scheduledVariableEvent);
+            }
+        }
+
+        return eventDTOs;
+    }
+
+    /**
+     * @return
+     */
+    public List<EventDTO> getFixedEvents(LocalDate firstDate, LocalDate secondDate, Principal principal) {
+        List<FixedEvent> events = fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(firstDate, secondDate, principal.getName());
+        List<FixedEvent> repeatingEvents = fixedEventRepository.findAllRepeatingByEndDateGreaterThanDate(firstDate, principal.getName());
+
+        for(FixedEvent e : repeatingEvents) {
+            RepititionType repititionType = e.getRepeatEvent().getRepititionType();
+
+            LocalDate date1 = (e.getStartDate().isAfter(firstDate)) ? e.getStartDate() : firstDate;
+            LocalDate date2 = (e.getRepeatEvent().getEndDate().isBefore(secondDate))
+                    ? e.getRepeatEvent().getEndDate() : secondDate;
+
+            int daysDifferenceBetweenStartAndEndDate = Period.between(e.getStartDate(), e.getEndDate()).getDays();
+
+            int daysDifferenceBetweenDate1AndDate2 = Period.between(date1, date2).getDays();
+
+            for (int i = 0; i <= daysDifferenceBetweenDate1AndDate2; i++) {
+                if(repititionType == RepititionType.DAILY
+                        || (repititionType == RepititionType.WEEKLY
+                        && e.getRepeatEvent().getWeeklyRepeatDays()[date1.plusDays(i).getDayOfWeek().getValue()%7])
+                ) {
+                    FixedEvent clonedFixedEvent = SerializationUtils.clone(e);
+                    clonedFixedEvent.setStartDate(date1.plusDays(i));
+                    clonedFixedEvent.setEndDate(date1.plusDays(i).plusDays(daysDifferenceBetweenStartAndEndDate));
+                    events.add(clonedFixedEvent);
+                }
+            }
+        }
+
+        List<EventDTO> eventDTOs = events.stream()
+                .map(event -> modelMapper.map(event, EventDTO.class))
+                .peek(eventDTO -> eventDTO.setEventType(EventType.FIXED))
+                .collect(Collectors.toList());
+        return eventDTOs;
+    }
+
+    private LocalDateTime findStartTimeForVariableEvent(VariableEvent variableEvent, List<EventDTO> fixedEventDTOs, LocalDate firstDate, LocalDate secondDate) {
+        LocalDateTime startTime = LocalDateTime.of(firstDate, LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(secondDate, LocalTime.MAX);
+        boolean slotFound = false;
+
+        while (!slotFound && startTime.isBefore(endTime)) {
+            slotFound = true;
+
+            for (EventDTO fixedEvent : fixedEventDTOs) {
+                LocalDateTime fixedEventStart = LocalDateTime.of(fixedEvent.getStartDate(), fixedEvent.getStartTime());
+                LocalDateTime fixedEventEnd = LocalDateTime.of(fixedEvent.getEndDate(), fixedEvent.getEndTime());
+
+                LocalDateTime potentialEndTime = startTime.plus(variableEvent.getDuration());
+
+                if ((startTime.isEqual(fixedEventStart) || startTime.isAfter(fixedEventStart)) && startTime.isBefore(fixedEventEnd)
+                        || (potentialEndTime.isAfter(fixedEventStart) && potentialEndTime.isBefore(fixedEventEnd))
+                        || (startTime.isBefore(fixedEventStart) && potentialEndTime.isAfter(fixedEventEnd))) {
+                    startTime = fixedEventEnd;
+                    slotFound = false;
+                    break;
+                }
+            }
+        }
+
+        if (slotFound) {
+            return startTime;
+        } else {
+            return null;
+        }
     }
 }
