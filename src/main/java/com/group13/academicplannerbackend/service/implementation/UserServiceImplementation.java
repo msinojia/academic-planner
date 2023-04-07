@@ -1,7 +1,10 @@
 package com.group13.academicplannerbackend.service.implementation;
 
 import com.group13.academicplannerbackend.exception.UnAuthorizedUserException;
+import com.group13.academicplannerbackend.exception.UserNotFoundException;
 import com.group13.academicplannerbackend.exception.VerificationException;
+import com.group13.academicplannerbackend.model.JwtResponse;
+import com.group13.academicplannerbackend.model.ProfileStatus;
 import com.group13.academicplannerbackend.model.User;
 import com.group13.academicplannerbackend.model.UserMeta;
 import com.group13.academicplannerbackend.repository.UserMetaRepository;
@@ -49,6 +52,7 @@ public class UserServiceImplementation implements UserService, UserDetailsServic
         userRepository.save(user);
 
         UserMeta userMeta = new UserMeta();
+        userMeta.setProfileStatus(ProfileStatus.UNSET);
         userMeta.setUser(user);
         userMetaRepository.save(userMeta);
 
@@ -56,7 +60,7 @@ public class UserServiceImplementation implements UserService, UserDetailsServic
     }
 
     @Override
-    public String loginProcess(User user) throws UnAuthorizedUserException {
+    public JwtResponse loginProcess(User user) throws UnAuthorizedUserException {
         UserMeta userMeta;
         User tempUser;
         tempUser = userRepository.findByEmail(user.getEmail());
@@ -70,7 +74,7 @@ public class UserServiceImplementation implements UserService, UserDetailsServic
                 if (userMeta.isVerified() == true) {
                     UserDetails userDetails = (UserDetails) tempUser;
                     String jwtToken = Constants.JWT_TOKEN_PREFIX + jwtUtil.generateToken(userDetails);
-                    return jwtToken;
+                    return new JwtResponse(jwtToken, userMeta.getProfileStatus());
                 } else {
                     throw new VerificationException("please varify your email");
                 }
@@ -90,5 +94,21 @@ public class UserServiceImplementation implements UserService, UserDetailsServic
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByEmail(username);
+    }
+
+    @Override
+    public void updateProfileStatus(String email) throws UserNotFoundException {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new UserNotFoundException("User not found with email " + email);
+        }
+
+        UserMeta userMeta = user.getUserMeta();
+        if (userMeta == null) {
+            throw new UserNotFoundException("UserMeta not found for the user with email " + email);
+        }
+
+        userMeta.setProfileStatus(ProfileStatus.SET);
+        userMetaRepository.save(userMeta);
     }
 }
