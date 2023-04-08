@@ -6,6 +6,7 @@ import VariableEventModal from './components/variableEvent';
 import dayjs from 'dayjs';
 import { fetchEvents } from './api';
 import { formatEventData } from './helper';
+import QuizAssignmentForm from './components/quizAssignmentForm';
 import { Spin, message } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -48,6 +49,11 @@ const CalendarViewHome = () => {
     data: {},
   };
   const [formValues, setFormValues] = useState({ ...blanckForm });
+
+  const [varEventForm, setVaEventForm] = useState({
+    isModalOpen: false,
+    handleCancel: () => setVaEventForm({ ...varEventForm, isModalOpen: false }),
+  });
 
   const [startDate, setStartDate] = useState(moment());
 
@@ -138,6 +144,13 @@ const CalendarViewHome = () => {
           </button>
         ))}
       </span>
+      <span className='rbc-btn-group'>
+        <button
+          onClick={() => setVaEventForm({ ...varEventForm, isModalOpen: true })}
+        >
+          Add Schedule
+        </button>
+      </span>
     </div>
   );
 
@@ -199,6 +212,7 @@ const CalendarViewHome = () => {
         />
       </Spin>
       {formValues.isModalOpen && <VariableEventModal {...formValues} />}
+      {varEventForm.isModalOpen && <QuizAssignmentForm {...varEventForm} />}
     </div>
   );
 };
