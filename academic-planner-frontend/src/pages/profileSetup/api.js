@@ -1,5 +1,5 @@
-import { authApi } from '../../axiosConfig';
+import axios from '../../axiosConfig';
 
 export const addEvent = async (data) => {
-  return await authApi.post('/event/fixed', data);
+  return await axios.post('/event/fixed', data);
 };

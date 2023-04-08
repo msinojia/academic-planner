@@ -4,14 +4,29 @@ import Background from '../../assets/SignupBackgroundImage.jpg';
 import { useNavigate } from 'react-router-dom';
 import Title from 'antd/es/typography/Title';
 import { loginRequest } from './api';
+import { useEffect } from 'react';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (localStorage.getItem('jwtToken')) {
+      navigate('/home');
+    }
+  }, []);
+
   const onFinish = async (formValues) => {
-    const response = await loginRequest(formValues);
-    const token = response.data.token;
-    localStorage.setItem('jwtToken', token);
-    // navigate('/profile-setup');
+    try {
+      const response = await loginRequest(formValues);
+      const token = response.data.token;
+      localStorage.setItem('jwtToken', token);
+
+      if (response.data.profileStatus === 'SET') {
+        navigate('/home');
+      } else {
+        navigate('/profile-setup');
+      }
+    } catch (error) {}
   };
   return (
     <Row style={{ width: '100%', height: '100vh' }}>
