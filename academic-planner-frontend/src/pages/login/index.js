@@ -13,6 +13,7 @@ const LoginPage = () => {
     if (localStorage.getItem('jwtToken')) {
       navigate('/home');
     }
+    // eslint-disable-next-line
   }, []);
 
   const onFinish = async (formValues) => {

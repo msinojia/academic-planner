@@ -27,6 +27,7 @@ const CalendarViewHome = () => {
 
       fetchEventsByRange(start, end);
     }
+    // eslint-disable-next-line
   }, []);
 
   const [events, setEvents] = useState([

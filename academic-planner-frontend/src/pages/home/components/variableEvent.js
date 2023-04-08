@@ -6,6 +6,7 @@ const VariableEventModal = (props) => {
 
   useEffect(() => {
     !props.isModalOpen && form.resetFields();
+    // eslint-disable-next-line
   }, [props]);
 
   const onSubmit = () => {
