@@ -1,5 +1,7 @@
 package com.group13.academicplannerbackend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
 import lombok.Getter;
@@ -31,9 +33,11 @@ public class FixedEvent implements Serializable {
     private EventCategory eventCategory;
 
     @OneToOne(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private RepeatEvent repeatEvent;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonBackReference
     private User user;
 }

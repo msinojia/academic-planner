@@ -1,5 +1,7 @@
 package com.group13.academicplannerbackend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import javax.persistence.*;
 
 import java.io.Serializable;
@@ -13,6 +15,7 @@ public class RepeatEvent implements Serializable {
 
     @OneToOne
     @JoinColumn(name = "event_id")
+    @JsonBackReference
     private FixedEvent event;
 
     @Enumerated(EnumType.STRING)

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -22,6 +23,28 @@ public class EventController {
     @Autowired
     public EventController(EventService eventService) {
         this.eventService = eventService;
+    }
+
+    @CrossOrigin
+    @GetMapping("/fixed/{id}")
+    public ResponseEntity<FixedEvent> getFixedEventById(@PathVariable Long id) {
+        Optional<FixedEvent> fixedEvent = eventService.findFixedEventById(id);
+        if (fixedEvent.isPresent()) {
+            return ResponseEntity.ok(fixedEvent.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @CrossOrigin
+    @GetMapping("/variable/{id}")
+    public ResponseEntity<VariableEvent> getVariableEventById(@PathVariable Long id) {
+        Optional<VariableEvent> variableEvent = eventService.findVariableEventById(id);
+        if (variableEvent.isPresent()) {
+            return ResponseEntity.ok(variableEvent.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @CrossOrigin
