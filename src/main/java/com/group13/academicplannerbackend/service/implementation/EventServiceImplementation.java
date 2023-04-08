@@ -1,6 +1,5 @@
 package com.group13.academicplannerbackend.service.implementation;
 
-import com.fasterxml.jackson.databind.introspect.DefaultAccessorNamingStrategy.FirstCharBasedValidator;
 import com.group13.academicplannerbackend.model.*;
 import com.group13.academicplannerbackend.repository.FixedEventRepository;
 import com.group13.academicplannerbackend.repository.UserRepository;
@@ -111,6 +110,34 @@ public class EventServiceImplementation implements EventService {
     public void createVariableEvent(VariableEvent variableEvent, Principal principal) {
         User user = userRepository.findByEmail(principal.getName());
         variableEvent.setUser(user);
+
+        Schedule schedule = new Schedule();
+        ZoneId atlanticTimeZone = ZoneId.of("America/Halifax");
+        ZonedDateTime atlanticZonedDateTime = ZonedDateTime.now(atlanticTimeZone);
+        LocalDateTime currentDateTime = atlanticZonedDateTime.toLocalDateTime();
+        LocalDate currentDate = currentDateTime.toLocalDate();
+
+        List<EventDTO> fixedEventDTOs = getFixedEvents(currentDate,variableEvent.getDeadline().toLocalDate(), principal);
+        List<VariableEvent> variableEvents = variableEventRepository.findAllByUserEmail(principal.getName());
+        List<EventDTO> variableEventDTOs = new ArrayList<>();
+        for (VariableEvent varEvent : variableEvents) {
+            EventDTO varEventDTO = modelMapper.map(variableEvent, EventDTO.class);
+            varEventDTO.setStartDate(varEvent.getSchedule().getScheduledDateTime().toLocalDate());
+            varEventDTO.setStartTime(varEvent.getSchedule().getScheduledDateTime().toLocalTime());
+            varEventDTO.setEndDate(varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalDate());
+            varEventDTO.setEndTime(varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalTime());
+            varEventDTO.setReschedulable(true);
+            varEventDTO.setEventType(EventType.VARIABLE);
+            variableEventDTOs.add(varEventDTO);
+        }
+
+        fixedEventDTOs.addAll(variableEventDTOs);
+        fixedEventDTOs.sort(Comparator.comparing(EventDTO::getStartDate).thenComparing(EventDTO::getStartTime));
+
+        LocalDateTime scheduledDateTime = findStartTimeForVariableEvent(variableEvent, fixedEventDTOs, currentDateTime, variableEvent.getDeadline());
+        schedule.setScheduledDateTime(scheduledDateTime);
+        variableEvent.setSchedule(schedule);
+        schedule.setVariableEvent(variableEvent);
         variableEventRepository.save(variableEvent);
     }
 
@@ -123,6 +150,7 @@ public class EventServiceImplementation implements EventService {
             if (!user.getId().equals(checkInsideDB.getUser().getId())) {
                 return UpdateEventStatus.NOT_AUTHORIZED;
             }
+            variableEvent.setUser(user);
             variableEventRepository.save(variableEvent);
             return UpdateEventStatus.SUCCESS;
         }
@@ -158,27 +186,38 @@ public class EventServiceImplementation implements EventService {
     @Override
     public List<EventDTO> getEvents(LocalDate firstDate, LocalDate secondDate, Principal principal) {
         List<EventDTO> eventDTOs = getFixedEvents(firstDate, secondDate, principal);
-        List<VariableEvent> variableEvents = variableEventRepository.findAllByUserEmail(principal.getName());
+        LocalDateTime firstDateTime = LocalDateTime.of(firstDate, LocalTime.MIN);
+        LocalDateTime secondDateTime = LocalDateTime.of(secondDate, LocalTime.MAX);
 
-        // Sort variable events by deadline
-        variableEvents.sort(Comparator.comparing(VariableEvent::getDeadline));
-
-        // Find free time slots and schedule variable events
-        for (VariableEvent variableEvent : variableEvents) {
-            LocalDateTime scheduledStartTime = findStartTimeForVariableEvent(variableEvent, eventDTOs, firstDate, secondDate);
-            if (scheduledStartTime != null) {
-                EventDTO scheduledVariableEvent = modelMapper.map(variableEvent, EventDTO.class);
-                scheduledVariableEvent.setStartDate(scheduledStartTime.toLocalDate());
-                scheduledVariableEvent.setStartTime(scheduledStartTime.toLocalTime());
-                scheduledVariableEvent.setEndDate(scheduledStartTime.plus(variableEvent.getDuration()).toLocalDate());
-                scheduledVariableEvent.setEndTime(scheduledStartTime.plus(variableEvent.getDuration()).toLocalTime());
-                scheduledVariableEvent.setReschedulable(true);
-                scheduledVariableEvent.setEventType(EventType.VARIABLE);
-                eventDTOs.add(scheduledVariableEvent);
-            }
+        List<VariableEvent> variableEvents = variableEventRepository.findAllByStartDateOrEndDateBetweenDates(firstDateTime, secondDateTime, principal.getName());
+        List<EventDTO> variableEventDTOs = new ArrayList<>();
+        for (VariableEvent varEvent : variableEvents) {
+            EventDTO varEventDTO = modelMapper.map(varEvent, EventDTO.class);
+            varEventDTO.setStartDate(varEvent.getSchedule().getScheduledDateTime().toLocalDate());
+            varEventDTO.setStartTime(varEvent.getSchedule().getScheduledDateTime().toLocalTime());
+            varEventDTO.setEndDate(varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalDate());
+            varEventDTO.setEndTime(varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalTime());
+            varEventDTO.setReschedulable(true);
+            varEventDTO.setEventType(EventType.VARIABLE);
+            variableEventDTOs.add(varEventDTO);
         }
 
+        eventDTOs.addAll(variableEventDTOs);
         return eventDTOs;
+    }
+
+    /**
+     * @param id 
+     * @return
+     */
+    @Override
+    public Optional<FixedEvent> findFixedEventById(Long id) {
+        return fixedEventRepository.findById(id);
+    }
+
+    @Override
+    public Optional<VariableEvent> findVariableEventById(Long id) {
+        return variableEventRepository.findById(id);
     }
 
     /**
@@ -191,11 +230,10 @@ public class EventServiceImplementation implements EventService {
         for(FixedEvent e : repeatingEvents) {
             RepititionType repititionType = e.getRepeatEvent().getRepititionType();
 
-            LocalDate date1 = (e.getStartDate().isAfter(firstDate)) ? e.getStartDate() : firstDate;
+            int daysDifferenceBetweenStartAndEndDate = Period.between(e.getStartDate(), e.getEndDate()).getDays();
+            LocalDate date1 = (e.getStartDate().isEqual(firstDate) || e.getStartDate().isAfter(firstDate)) ? e.getStartDate() : firstDate.minusDays(daysDifferenceBetweenStartAndEndDate);
             LocalDate date2 = (e.getRepeatEvent().getEndDate().isBefore(secondDate))
                     ? e.getRepeatEvent().getEndDate() : secondDate;
-
-            int daysDifferenceBetweenStartAndEndDate = Period.between(e.getStartDate(), e.getEndDate()).getDays();
 
             int daysDifferenceBetweenDate1AndDate2 = Period.between(date1, date2).getDays();
 
@@ -219,32 +257,33 @@ public class EventServiceImplementation implements EventService {
         return eventDTOs;
     }
 
-    private LocalDateTime findStartTimeForVariableEvent(VariableEvent variableEvent, List<EventDTO> fixedEventDTOs, LocalDate firstDate, LocalDate secondDate) {
-        LocalDateTime startTime = LocalDateTime.of(firstDate, LocalTime.MIN);
-        LocalDateTime endTime = LocalDateTime.of(secondDate, LocalTime.MAX);
+    private LocalDateTime findStartTimeForVariableEvent(VariableEvent variableEvent, List<EventDTO> fixedEventDTOs, LocalDateTime startDateTime, LocalDateTime endDateTime) {
         boolean slotFound = false;
-
-        while (!slotFound && startTime.isBefore(endTime)) {
+        LocalDateTime potentialEndTime = LocalDateTime.MAX;
+        while (!slotFound && startDateTime.isBefore(endDateTime)) {
             slotFound = true;
 
             for (EventDTO fixedEvent : fixedEventDTOs) {
                 LocalDateTime fixedEventStart = LocalDateTime.of(fixedEvent.getStartDate(), fixedEvent.getStartTime());
                 LocalDateTime fixedEventEnd = LocalDateTime.of(fixedEvent.getEndDate(), fixedEvent.getEndTime());
 
-                LocalDateTime potentialEndTime = startTime.plus(variableEvent.getDuration());
+                potentialEndTime = startDateTime.plus(variableEvent.getDuration());
 
-                if ((startTime.isEqual(fixedEventStart) || startTime.isAfter(fixedEventStart)) && startTime.isBefore(fixedEventEnd)
+                if ((startDateTime.isEqual(fixedEventStart) || startDateTime.isAfter(fixedEventStart)) && startDateTime.isBefore(fixedEventEnd)
                         || (potentialEndTime.isAfter(fixedEventStart) && potentialEndTime.isBefore(fixedEventEnd))
-                        || (startTime.isBefore(fixedEventStart) && potentialEndTime.isAfter(fixedEventEnd))) {
-                    startTime = fixedEventEnd;
+                        || (startDateTime.isBefore(fixedEventStart) && potentialEndTime.isAfter(fixedEventEnd))
+                ) {
+                    startDateTime = fixedEventEnd;
                     slotFound = false;
                     break;
                 }
             }
         }
 
-        if (slotFound) {
-            return startTime;
+        if (slotFound &&
+                (potentialEndTime.isBefore(variableEvent.getDeadline()) || (potentialEndTime.isEqual(variableEvent.getDeadline())))
+        ) {
+            return startDateTime;
         } else {
             return null;
         }
