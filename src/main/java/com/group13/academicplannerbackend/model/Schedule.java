@@ -1,28 +1,25 @@
 package com.group13.academicplannerbackend.model;
 
-import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.io.Serializable;
+import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Setter
-public class UserMeta implements Serializable {
+public class Schedule {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @OneToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "variable_event_id")
     @JsonBackReference
-    private User user;
+    private VariableEvent variableEvent;
 
-    private boolean verified;
-
-    @Enumerated(EnumType.STRING)
-    private ProfileStatus profileStatus;
+    private LocalDateTime scheduledDateTime;
 }
