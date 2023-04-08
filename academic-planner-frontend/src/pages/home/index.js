@@ -146,9 +146,12 @@ const CalendarViewHome = () => {
       </span>
       <span className='rbc-btn-group'>
         <button
-          onClick={() => setVaEventForm({ ...varEventForm, isModalOpen: true })}
+          onClick={() => {
+            localStorage.removeItem('jwtToken');
+            navigate('/login');
+          }}
         >
-          Add Schedule
+          Logout
         </button>
       </span>
     </div>
