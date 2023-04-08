@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.Principal;
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -39,8 +40,8 @@ public class EventServiceImplementation implements EventService {
     /**
      * @param fixedEvent
      */
-    @Override                                          
-    public void createFixedEvent(FixedEvent fixedEvent, Principal principal) {
+    @Override
+    public List<EventDTO> createFixedEvent(FixedEvent fixedEvent, Principal principal) {
         if(fixedEvent.isRepeat()) {
             RepeatEvent repeatEvent = fixedEvent.getRepeatEvent();
             repeatEvent.setEvent(fixedEvent);
@@ -49,7 +50,10 @@ public class EventServiceImplementation implements EventService {
         User user = userRepository.findByEmail(principal.getName());
         fixedEvent.setUser(user);
         fixedEventRepository.save(fixedEvent);
+
+        return rescheduleVariableEvents(principal);
     }
+
 
     @Override                                        
     public UpdateEventStatus updateFixedEvent(FixedEvent fixedEvent, Principal principal) {
@@ -105,40 +109,63 @@ public class EventServiceImplementation implements EventService {
 
     /**
      * @param variableEvent
+     * @return
      */
     @Override
-    public void createVariableEvent(VariableEvent variableEvent, Principal principal) {
+    public List<EventDTO> createVariableEvent(VariableEvent variableEvent, Principal principal) {
         User user = userRepository.findByEmail(principal.getName());
         variableEvent.setUser(user);
 
         Schedule schedule = new Schedule();
+        variableEvent.setSchedule(schedule);
+        schedule.setVariableEvent(variableEvent);
+        variableEventRepository.save(variableEvent);
+        List<EventDTO> unscheduledVariableEvents = rescheduleVariableEvents(principal);
+        return unscheduledVariableEvents;
+    }
+
+    @Override
+    public List<EventDTO> rescheduleVariableEvents(Principal principal) {
+        List<EventDTO> unscheduledVariableEvents = new ArrayList<>();
+
         ZoneId atlanticTimeZone = ZoneId.of("America/Halifax");
         ZonedDateTime atlanticZonedDateTime = ZonedDateTime.now(atlanticTimeZone);
         LocalDateTime currentDateTime = atlanticZonedDateTime.toLocalDateTime();
         LocalDate currentDate = currentDateTime.toLocalDate();
-
-        List<EventDTO> fixedEventDTOs = getFixedEvents(currentDate,variableEvent.getDeadline().toLocalDate(), principal);
+        LocalDate endDate = LocalDate.of(2030,12,31);
+//        List<EventDTO> fixedEventDTOs = getFixedEvents(currentDate, LocalDate.MAX, principal);
+        List<EventDTO> fixedEventDTOs = getFixedEvents(currentDate, endDate, principal);
         List<VariableEvent> variableEvents = variableEventRepository.findAllByUserEmail(principal.getName());
-        List<EventDTO> variableEventDTOs = new ArrayList<>();
-        for (VariableEvent varEvent : variableEvents) {
-            EventDTO varEventDTO = modelMapper.map(variableEvent, EventDTO.class);
-            varEventDTO.setStartDate(varEvent.getSchedule().getScheduledDateTime().toLocalDate());
-            varEventDTO.setStartTime(varEvent.getSchedule().getScheduledDateTime().toLocalTime());
-            varEventDTO.setEndDate(varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalDate());
-            varEventDTO.setEndTime(varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalTime());
-            varEventDTO.setReschedulable(true);
-            varEventDTO.setEventType(EventType.VARIABLE);
-            variableEventDTOs.add(varEventDTO);
+        fixedEventDTOs.sort(Comparator.comparing(EventDTO::getStartDate).thenComparing(EventDTO::getStartTime));
+        variableEvents.sort(Comparator.comparing(VariableEvent::getDeadline));
+
+        for (VariableEvent variableEvent : variableEvents) {
+            LocalDateTime scheduledDateTime =  findStartTimeForVariableEvent(variableEvent, fixedEventDTOs, currentDateTime, variableEvent.getDeadline());
+            variableEvent.getSchedule().setScheduledDateTime(scheduledDateTime);
+            EventDTO varEventDTO = variableEventToDTO(variableEvent);
+            if (scheduledDateTime != null) {
+                variableEventRepository.save(variableEvent);
+                fixedEventDTOs.add(varEventDTO);
+            } else {
+                unscheduledVariableEvents.add(varEventDTO);
+                variableEventRepository.deleteById(variableEvent.getId());
+            }
         }
 
-        fixedEventDTOs.addAll(variableEventDTOs);
-        fixedEventDTOs.sort(Comparator.comparing(EventDTO::getStartDate).thenComparing(EventDTO::getStartTime));
+        return unscheduledVariableEvents;
+    }
 
-        LocalDateTime scheduledDateTime = findStartTimeForVariableEvent(variableEvent, fixedEventDTOs, currentDateTime, variableEvent.getDeadline());
-        schedule.setScheduledDateTime(scheduledDateTime);
-        variableEvent.setSchedule(schedule);
-        schedule.setVariableEvent(variableEvent);
-        variableEventRepository.save(variableEvent);
+    public EventDTO variableEventToDTO(VariableEvent variableEvent) {
+        EventDTO varEventDTO = modelMapper.map(variableEvent, EventDTO.class);
+        if(variableEvent.getSchedule().getScheduledDateTime() != null) {
+            varEventDTO.setStartDate(variableEvent.getSchedule().getScheduledDateTime().toLocalDate());
+            varEventDTO.setStartTime(variableEvent.getSchedule().getScheduledDateTime().toLocalTime());
+            varEventDTO.setEndDate(variableEvent.getSchedule().getScheduledDateTime().plus(variableEvent.getDuration()).toLocalDate());
+            varEventDTO.setEndTime(variableEvent.getSchedule().getScheduledDateTime().plus(variableEvent.getDuration()).toLocalTime());
+        }
+        varEventDTO.setReschedulable(true);
+        varEventDTO.setEventType(EventType.VARIABLE);
+        return varEventDTO;
     }
 
     @Override
@@ -235,9 +262,10 @@ public class EventServiceImplementation implements EventService {
             LocalDate date2 = (e.getRepeatEvent().getEndDate().isBefore(secondDate))
                     ? e.getRepeatEvent().getEndDate() : secondDate;
 
-            int daysDifferenceBetweenDate1AndDate2 = Period.between(date1, date2).getDays();
+//            int daysDifferenceBetweenDate1AndDate2 = Period.between(date1, date2).getDays();
+            long daysDifferenceBetweenDate1AndDate2 = ChronoUnit.DAYS.between(date1, date2);
 
-            for (int i = 0; i <= daysDifferenceBetweenDate1AndDate2; i++) {
+            for (long i = 0; i <= daysDifferenceBetweenDate1AndDate2; i++) {
                 if(repititionType == RepititionType.DAILY
                         || (repititionType == RepititionType.WEEKLY
                         && e.getRepeatEvent().getWeeklyRepeatDays()[date1.plusDays(i).getDayOfWeek().getValue()%7])
