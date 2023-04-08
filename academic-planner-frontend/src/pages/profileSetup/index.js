@@ -5,11 +5,18 @@ import SetupEssential from './setupEssentials';
 import SetupJob from './setupJob';
 import SetupLectLab from './setupLectLab';
 import SetupPersonalActivity from './setupPersonalActivity';
+import { useNavigate } from 'react-router-dom';
+import { setUserProfileComplete } from './api';
 
 const ProfieSetup = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const navigate = useNavigate();
 
   const handleNext = () => {
+    if (currentStep > 3) {
+      navigate('/home');
+      setUserProfileComplete();
+    }
     setCurrentStep(currentStep + 1);
   };
 
