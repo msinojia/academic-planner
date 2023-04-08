@@ -6,6 +6,9 @@ import VariableEventModal from './components/variableEvent';
 import dayjs from 'dayjs';
 import { fetchEvents } from './api';
 import { formatEventData } from './helper';
+import { Spin, message } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 
 const localizer = momentLocalizer(moment);
 const momentFormatString = 'ddd MMM DD YYYY HH:mm:ss [GMT]ZZ';
@@ -13,13 +16,16 @@ const formatString = 'HH:mm:ss';
 
 const CalendarViewHome = () => {
   const DATE_FORMAT = 'YYYY-MM-DD';
-
+  const navigate = useNavigate();
   useEffect(() => {
-    var today = moment();
-    const start = today.startOf('week').format(DATE_FORMAT);
-    const end = today.endOf('week').format(DATE_FORMAT);
+    if (!localStorage.getItem('jwtToken')) navigate('/login');
+    else {
+      var today = moment();
+      const start = today.startOf('week').format(DATE_FORMAT);
+      const end = today.endOf('week').format(DATE_FORMAT);
 
-    fetchEventsByRange(start, end);
+      fetchEventsByRange(start, end);
+    }
   }, []);
 
   const [events, setEvents] = useState([
@@ -34,23 +40,31 @@ const CalendarViewHome = () => {
       title: 'Event 2',
     },
   ]);
-  const [formValues, setFormValues] = useState({
+  const blanckForm = {
     isAdd: true,
     isModalOpen: false,
     handleCancel: () =>
       setFormValues({ ...formValues, isModalOpen: false, data: {} }),
     data: {},
-  });
+  };
+  const [formValues, setFormValues] = useState({ ...blanckForm });
+
+  const [startDate, setStartDate] = useState(moment());
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchEventsByRange = async (start, end) => {
-    const res = await fetchEvents(start, end);
-    console.log(res.data);
-    setEvents(formatEventData(res.data));
-    console.log(formatEventData(res.data));
+    setIsLoading(true);
+    try {
+      const res = await fetchEvents(start, end);
+      console.log({ res }, 'res.data', res.data);
+      setEvents(formatEventData(res.data));
+      console.log('formatEventData', formatEventData(res.data));
+    } catch (e) {
+      message.error('Something went wrong while fetching data');
+    }
+    setIsLoading(false);
   };
-
-  // const [view, setView] = useState('week');
-  // const [dateRange, setDateRange] = useState({});
 
   const handleNavigate = (dateOrObject, view) => {
     const { start, end } =
@@ -61,29 +75,18 @@ const CalendarViewHome = () => {
           }
         : dateOrObject;
     console.log({ start, end, view });
+    setStartDate(moment(start));
     fetchEventsByRange(
       moment(start).startOf(view).format(DATE_FORMAT),
       moment(end).format(DATE_FORMAT)
     );
   };
 
-  // console.log('formValues', formValues);
   const handleSelect = ({ start, end }) => {
-    // const title = window.prompt('New Event name');
-    // console.log(start);
-    // console.log(end);
-
     const momDate = moment(start, momentFormatString);
-    // console.log(
-    //   start,
-    //   momDate,
-    //   momDate.format('LTS'),
-    //   moment(end, momentFormatString).format('LTS'),
-    //   momDate.format('L')
-    // );
 
     setFormValues({
-      ...formValues,
+      ...blanckForm,
       isAdd: true,
       isModalOpen: true,
       data: {
@@ -95,29 +98,15 @@ const CalendarViewHome = () => {
         ),
       },
     });
-    // if (title) {
-    //   setEvents([...events, { start, end, title }]);
-    // }
   };
 
   const handleEventClick = (event) => {
-    // const title = window.prompt('New Event name', event.title);
-    // console.log(typeof event.start);
-    // if (title) {
-    //   const updatedEvents = events.map((e) => {
-    //     if (e === event) {
-    //       return { ...e, title };
-    //     } else {
-    //       return e;
-    //     }
-    //   });
-    //   setEvents(updatedEvents);
-    // }
     const { start, end, title } = event;
     const momDate = moment(start);
+
     setFormValues({
-      ...formValues,
-      isAdd: true,
+      ...blanckForm,
+      isAdd: false,
       isModalOpen: true,
       data: {
         name: title,
@@ -128,22 +117,88 @@ const CalendarViewHome = () => {
     });
   };
 
+  const CustomToolbar = (props) => (
+    <div className='rbc-toolbar'>
+      <span className='rbc-btn-group'>
+        <span className='rbc-btn-group'>
+          <button onClick={() => props.onNavigate('TODAY')}>Today</button>
+          <button onClick={() => props.onNavigate('PREV')}>Back</button>
+          <button onClick={() => props.onNavigate('NEXT')}>Next</button>
+        </span>
+      </span>
+      <span className='rbc-toolbar-label'>{props.label}</span>
+      <span className='rbc-btn-group'>
+        {props.views.map((view) => (
+          <button
+            key={view}
+            className={view === props.view ? 'rbc-active' : ''}
+            onClick={() => props.onView(view)}
+          >
+            {view}
+          </button>
+        ))}
+      </span>
+    </div>
+  );
+
+  const handleViewChange = (view, temp) => {
+    console.log('view', view);
+    fetchEventsByRange(
+      moment(startDate).startOf(view).format(DATE_FORMAT),
+      moment(startDate).endOf(view).format(DATE_FORMAT)
+    );
+  };
+
+  const eventStyleGetter = (event, start, end, isSelected) => {
+    const backgroundColor = event.eventType === 'FIXED' ? undefined : '#6F2DA8';
+    const style = {
+      backgroundColor,
+      borderRadius: '5px',
+      opacity: 0.8,
+      color: 'white',
+      border: '0px',
+      display: 'block',
+    };
+    return {
+      style: style,
+    };
+  };
+
+  const views = {
+    month: true,
+    week: true,
+    day: true,
+    agenda: false,
+  };
+
   return (
     <div className='myCustomHeight'>
-      <Calendar
-        localizer={localizer}
-        events={events}
-        defaultDate={new Date()}
-        defaultView={'week'}
-        startAccessor='start'
-        endAccessor='end'
-        selectable
-        onNavigate={handleNavigate}
-        onSelectSlot={handleSelect}
-        onSelectEvent={handleEventClick}
-        style={{ height: 700 }}
-      />
-      {formValues.data && <VariableEventModal {...formValues} />}
+      <Spin
+        spinning={isLoading}
+        tip='Loading...'
+        indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />}
+      >
+        <Calendar
+          localizer={localizer}
+          events={events}
+          defaultDate={new Date()}
+          defaultView={'week'}
+          startAccessor='start'
+          endAccessor='end'
+          onView={handleViewChange}
+          views={views}
+          components={{
+            toolbar: CustomToolbar,
+          }}
+          selectable
+          onNavigate={handleNavigate}
+          onSelectSlot={handleSelect}
+          onSelectEvent={handleEventClick}
+          style={{ height: 700, margin: '20px' }}
+          eventPropGetter={eventStyleGetter}
+        />
+      </Spin>
+      {formValues.isModalOpen && <VariableEventModal {...formValues} />}
     </div>
   );
 };

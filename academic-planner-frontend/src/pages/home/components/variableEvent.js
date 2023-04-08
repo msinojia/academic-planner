@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { TimePicker, Modal, Form, Input, Row, Col, DatePicker } from 'antd';
 
 const VariableEventModal = (props) => {
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    !props.isModalOpen && form.resetFields();
+  }, [props]);
 
   const onSubmit = () => {
     form
@@ -13,9 +17,10 @@ const VariableEventModal = (props) => {
       });
   };
   // WeekDays;
-  return (
+  console.log({ props });
+  return props.isModalOpen ? (
     <Modal
-      title={props.isAdd ? 'Add new schedule' : 'Edit existing schedule'}
+      title={props.isAdd ? 'Add New Schedule' : 'Edit Existing Schedule'}
       open={props.isModalOpen}
       onOk={onSubmit}
       okText={'Save'}
@@ -37,26 +42,6 @@ const VariableEventModal = (props) => {
         >
           <DatePicker />
         </Form.Item>
-        {/* <Form.Item label='Description' name={'details'}>
-          <Input placeholder='Enter Description' />
-        </Form.Item> */}
-        {/* {props.isLectLab && (
-          <Form.Item
-            label='Class Type'
-            name='eventCategory'
-            rules={[
-              {
-                required: 'true',
-                message: 'Select Class Type!',
-              },
-            ]}
-          >
-            <Radio.Group>
-              <Radio.Button value='CLASS'>Lecture</Radio.Button>
-              <Radio.Button value='LAB'>Laboratory</Radio.Button>
-            </Radio.Group>
-          </Form.Item>
-        )} */}
         <Row>
           <Col span={12}>
             <Form.Item
@@ -91,6 +76,8 @@ const VariableEventModal = (props) => {
         </Row>
       </Form>
     </Modal>
+  ) : (
+    <></>
   );
 };
 
