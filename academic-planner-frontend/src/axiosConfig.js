@@ -24,6 +24,9 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error instanceof AxiosError && error.response?.status === 401) {
       redirectToLogin();
+      // if (error instanceof AxiosError && error.response?.status === 401) {
+      //   useAuthStore.setState({ signedInAs: undefined });
+      // }
     }
     return Promise.reject(error);
   }
