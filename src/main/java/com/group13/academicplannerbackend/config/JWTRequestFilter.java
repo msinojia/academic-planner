@@ -21,7 +21,7 @@ import java.io.IOException;
 public class JWTRequestFilter extends OncePerRequestFilter {
     private UserDetailsService userDetailsService;
     private JWTUtil jwtUtil;
-    private static final int Substring = 3;
+    private static final int Substring = 7;
 
     @Autowired
     public JWTRequestFilter(UserDetailsService userDetailsService, JWTUtil jwtUtil) {
