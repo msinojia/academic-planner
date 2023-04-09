@@ -2,14 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import VariableEventModal from './components/variableEvent';
+import EventForm from './components/eventForm';
 import dayjs from 'dayjs';
-import { fetchEvents } from './api';
-import { formatEventData } from './helper';
-import QuizAssignmentForm from './components/quizAssignmentForm';
+import {
+  deleteFixedEvent,
+  deleteVariableEvent,
+  fetchEvents,
+  getFixedEvent,
+  getVariableEvent,
+  rescheduleSuggestions,
+} from './api';
+import { formatEventData, getFixedFormValue } from './helper';
 import { Spin, message } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import EventMenu from './components/eventMenu';
 
 const localizer = momentLocalizer(moment);
 const momentFormatString = 'ddd MMM DD YYYY HH:mm:ss [GMT]ZZ';
@@ -27,33 +34,106 @@ const CalendarViewHome = () => {
 
       fetchEventsByRange(start, end);
     }
+    // eslint-disable-next-line
   }, []);
 
   const [events, setEvents] = useState([
-    {
-      start: moment().subtract(4, 'hours').toDate(),
-      end: moment().subtract(3, 'hours').toDate(),
-      title: 'Event 1',
-    },
-    {
-      start: moment().toDate(),
-      end: moment().add(1, 'hours').toDate(),
-      title: 'Event 2',
-    },
+    // {
+    //   start: moment().subtract(4, 'hours').toDate(),
+    //   end: moment().subtract(3, 'hours').toDate(),
+    //   title: 'Event 1',
+    // },
+    // {
+    //   start: moment().toDate(),
+    //   end: moment().add(1, 'hours').toDate(),
+    //   title: 'Event 2',
+    // },
   ]);
+
+  const handleEdit = async (event) => {
+    setIsLoading(true);
+    try {
+      if (event.eventType === 'FIXED') {
+        const { data } = await getFixedEvent(event.id);
+        setFormValues({
+          ...blanckForm,
+          isAddEvent: false,
+          isModalOpen: true,
+          data: getFixedFormValue(data),
+        });
+      } else {
+        const { data } = await getVariableEvent(event.id);
+        const duration = moment.duration(data.duration);
+        setFormValues({
+          ...blanckForm,
+          isAddEvent: false,
+          isModalOpen: true,
+          data: {
+            ...data,
+            eventDate: moment(
+              moment(data.deadline).format('YYYY-MM-DD'),
+              'YYYY-MM-DD'
+            ),
+            startTime: dayjs(
+              moment(data.deadline).format(formatString),
+              formatString
+            ),
+            days: Math.floor(duration.hours() / 24),
+            hours:
+              (duration.hours() % 24) + Math.floor(duration.minutes() / 60),
+            minutes:
+              (duration.minutes() % 60) + Math.floor(duration.seconds() / 60),
+            eventType: 'VARIABLE',
+          },
+        });
+      }
+    } catch (e) {
+      message.error('Error while updating event');
+    }
+    setIsLoading(false);
+  };
+
+  const handleDelete = async (event) => {
+    setIsLoading(true);
+    try {
+      if (event.eventType === 'FIXED') {
+        await deleteFixedEvent(event.id);
+      } else {
+        await deleteVariableEvent(event.id);
+      }
+      message.success('Event deleted successfully');
+    } catch (e) {
+      message.error('Error while deleting event');
+    }
+    setIsLoading(false);
+  };
+
+  const CustomEvent = (data) => {
+    const { event } = data;
+
+    return (
+      <EventMenu
+        event={event}
+        onEdit={() => handleEdit(event)}
+        onDelete={() => handleDelete(event)}
+      >
+        <div {...data}>
+          <div className='rbc-event-content' title={event.title}>
+            {event.title}
+          </div>
+        </div>
+      </EventMenu>
+    );
+  };
+
   const blanckForm = {
-    isAdd: true,
+    isAddEvent: true,
     isModalOpen: false,
     handleCancel: () =>
       setFormValues({ ...formValues, isModalOpen: false, data: {} }),
     data: {},
   };
   const [formValues, setFormValues] = useState({ ...blanckForm });
-
-  const [varEventForm, setVaEventForm] = useState({
-    isModalOpen: false,
-    handleCancel: () => setVaEventForm({ ...varEventForm, isModalOpen: false }),
-  });
 
   const [startDate, setStartDate] = useState(moment());
 
@@ -63,9 +143,7 @@ const CalendarViewHome = () => {
     setIsLoading(true);
     try {
       const res = await fetchEvents(start, end);
-      console.log({ res }, 'res.data', res.data);
       setEvents(formatEventData(res.data));
-      console.log('formatEventData', formatEventData(res.data));
     } catch (e) {
       message.error('Something went wrong while fetching data');
     }
@@ -80,7 +158,6 @@ const CalendarViewHome = () => {
             end: moment(dateOrObject).endOf(view).toDate(),
           }
         : dateOrObject;
-    console.log({ start, end, view });
     setStartDate(moment(start));
     fetchEventsByRange(
       moment(start).startOf(view).format(DATE_FORMAT),
@@ -93,7 +170,7 @@ const CalendarViewHome = () => {
 
     setFormValues({
       ...blanckForm,
-      isAdd: true,
+      isAddEvent: true,
       isModalOpen: true,
       data: {
         eventDate: moment(momDate.format('L'), 'L'),
@@ -106,23 +183,6 @@ const CalendarViewHome = () => {
     });
   };
 
-  const handleEventClick = (event) => {
-    const { start, end, title } = event;
-    const momDate = moment(start);
-
-    setFormValues({
-      ...blanckForm,
-      isAdd: false,
-      isModalOpen: true,
-      data: {
-        name: title,
-        eventDate: moment(momDate.format('L')),
-        startTime: dayjs(momDate.format('LTS'), 'HH:mm:ss A'),
-        endTime: dayjs(moment(end).format('LTS'), 'HH:mm:ss A'),
-      },
-    });
-  };
-
   const CustomToolbar = (props) => (
     <div className='rbc-toolbar'>
       <span className='rbc-btn-group'>
@@ -130,6 +190,9 @@ const CalendarViewHome = () => {
           <button onClick={() => props.onNavigate('TODAY')}>Today</button>
           <button onClick={() => props.onNavigate('PREV')}>Back</button>
           <button onClick={() => props.onNavigate('NEXT')}>Next</button>
+        </span>
+        <span className='rbc-btn-group'>
+          <button onClick={() => rescheduleSuggestions()}>Reschedule</button>
         </span>
       </span>
       <span className='rbc-toolbar-label'>{props.label}</span>
@@ -146,16 +209,18 @@ const CalendarViewHome = () => {
       </span>
       <span className='rbc-btn-group'>
         <button
-          onClick={() => setVaEventForm({ ...varEventForm, isModalOpen: true })}
+          onClick={() => {
+            localStorage.removeItem('jwtToken');
+            navigate('/login');
+          }}
         >
-          Add Schedule
+          Logout
         </button>
       </span>
     </div>
   );
 
   const handleViewChange = (view, temp) => {
-    console.log('view', view);
     fetchEventsByRange(
       moment(startDate).startOf(view).format(DATE_FORMAT),
       moment(startDate).endOf(view).format(DATE_FORMAT)
@@ -202,17 +267,16 @@ const CalendarViewHome = () => {
           views={views}
           components={{
             toolbar: CustomToolbar,
+            event: CustomEvent,
           }}
           selectable
           onNavigate={handleNavigate}
           onSelectSlot={handleSelect}
-          onSelectEvent={handleEventClick}
           style={{ height: 700, margin: '20px' }}
           eventPropGetter={eventStyleGetter}
         />
       </Spin>
-      {formValues.isModalOpen && <VariableEventModal {...formValues} />}
-      {varEventForm.isModalOpen && <QuizAssignmentForm {...varEventForm} />}
+      {formValues.isModalOpen && <EventForm {...formValues} />}
     </div>
   );
 };
