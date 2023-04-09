@@ -38,7 +38,6 @@ deploy:
     - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
     - aws configure set default.region $AWS_REGION
-    - chmod 400 security.pem
     # Copy the application artifacts to S3
     - aws s3 cp target/*.jar s3://$S3_BUCKET_NAME/$APP_NAME/
     # SSH into the EC2 instance and deploy the application
