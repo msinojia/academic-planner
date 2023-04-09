@@ -31,7 +31,7 @@ export const getFixedFormValue = (data) => {
       startDate: moment(startDate),
       startTime: moment(startTime, 'HH:mm:ss'),
       endTime: moment(endTime, 'HH:mm:ss'),
-      eventType: isReschedulable ? 'NO-EDIT' : 'FIXED',
+      eventType: !isReschedulable ? 'NO-EDIT' : 'FIXED',
       isReschedulable: isReschedulable.toString(),
       isRepeat: isRepeat.toString(),
       weekDays: data.repeatEvent.weeklyRepeatDays?.reduce((acc, val, index) => {
@@ -47,7 +47,7 @@ export const getFixedFormValue = (data) => {
       startDate: moment(startDate),
       startTime: moment(startTime, 'HH:mm:ss'),
       endTime: moment(endTime, 'HH:mm:ss'),
-      eventType: isReschedulable ? 'NO-EDIT' : 'FIXED',
+      eventType: !isReschedulable ? 'NO-EDIT' : 'FIXED',
       isReschedulable: isReschedulable.toString(),
       isRepeat: isRepeat.toString(),
     };
