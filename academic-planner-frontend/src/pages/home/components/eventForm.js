@@ -222,7 +222,7 @@ const EventForm = (props) => {
         label='Event Date'
         rules={[{ required: true, message: 'Please select a date!' }]}
       >
-        <DatePicker />
+        <DatePicker format={'YYYY-MM-DD'} />
       </Form.Item>
       <Row>
         <Col span={12}>
@@ -314,10 +314,9 @@ const EventForm = (props) => {
           <Form.Item
             name='endDate'
             label='End Date'
-            hasFeedback
             rules={[{ required: true, message: 'Please select a date!' }]}
           >
-            <DatePicker />
+            <DatePicker format={'YYYY-MM-DD'} />
           </Form.Item>
           <Form.Item
             name='repititionType'

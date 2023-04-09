@@ -1,3 +1,4 @@
+import { message } from 'antd';
 import axios, { AxiosError } from 'axios';
 // import useAuthStore from '../hooks/useAuthStore';
 
@@ -23,10 +24,10 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error instanceof AxiosError && error.response?.status === 401) {
-      redirectToLogin();
-      // if (error instanceof AxiosError && error.response?.status === 401) {
-      //   useAuthStore.setState({ signedInAs: undefined });
-      // }
+      if (window.location.pathname !== '/login') {
+        message.error('Unauthorized! Please login again.');
+        redirectToLogin();
+      }
     }
     return Promise.reject(error);
   }
