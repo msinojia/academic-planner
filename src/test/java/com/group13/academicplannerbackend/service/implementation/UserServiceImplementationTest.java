@@ -1,6 +1,7 @@
 package com.group13.academicplannerbackend.service.implementation;
 
 import com.group13.academicplannerbackend.exception.UnAuthorizedUserException;
+import com.group13.academicplannerbackend.exception.UserNotFoundException;
 import com.group13.academicplannerbackend.exception.VerificationException;
 import com.group13.academicplannerbackend.model.JwtResponse;
 import com.group13.academicplannerbackend.model.ProfileStatus;
@@ -18,9 +19,10 @@ import org.junit.runner.RunWith;
 import org.mockito.*;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -101,5 +103,121 @@ public class UserServiceImplementationTest {
         verify(verificationServiceMock).sendVerificationEmail(user.getEmail());
     }
 
-    
+    @Test
+    public void testLoginSuccess() throws UnAuthorizedUserException {
+        User user = new User();
+        user.setEmail("pankti@gmail.com");
+        user.setPasswordHash("pankti25");
+
+        User tempUser = new User();
+        tempUser.setEmail("pankti@gmail.com");
+        tempUser.setPasswordHash(BCrypt.hashpw("pankti25", BCrypt.gensalt()));
+
+        UserMeta userMeta = new UserMeta();
+        userMeta.setProfileStatus(ProfileStatus.SET);
+        userMeta.setUser(tempUser);
+        userMeta.setVerified(true); // Set the verification status to true
+
+        // Remove this line since it sets the verification status to false
+        // userMeta.setVerified(false);
+
+        when(userRepository.findByEmail(any(String.class))).thenReturn(tempUser);
+        when(userMetaRepository.findByUser(any(User.class))).thenReturn(userMeta);
+        when(jwtUtil.generateToken(any(UserDetails.class))).thenReturn("someJwtToken");
+
+        JwtResponse result = userService.loginProcess(user);
+
+        assertNotNull(result);
+        assertEquals("Bearer someJwtToken", result.getToken());
+        assertEquals(ProfileStatus.SET, result.getProfileStatus());
+    }
+
+
+    @Test
+    public void testLoginIncorrectPassword() {
+        User user = new User();
+        user.setEmail("pankti@gmail.com");
+        user.setPasswordHash("pankti25");
+
+        User tempUser = new User();
+        tempUser.setEmail("pankti@gmail.com");
+        tempUser.setPasswordHash(BCrypt.hashpw("pankti25", BCrypt.gensalt()));
+
+        UserMeta userMeta = new UserMeta();
+        userMeta.setProfileStatus(ProfileStatus.SET);
+        userMeta.setUser(tempUser);
+        userMeta.setVerified(true);
+        userMeta.setVerified(false);
+
+        user.setPasswordHash("pankti2510");
+
+        when(userRepository.findByEmail(any(String.class))).thenReturn(tempUser);
+
+        assertThrows(UnAuthorizedUserException.class, () -> {
+            userService.loginProcess(user);
+        });
+    }
+    @Test
+    public void testLoginUnverifiedEmail() {
+        User user = new User();
+        user.setEmail("pankti@gmail.com");
+        user.setPasswordHash("pankti25");
+
+        User tempUser = new User();
+        tempUser.setEmail("pankti@gmail.com");
+        tempUser.setPasswordHash(BCrypt.hashpw("pankti25", BCrypt.gensalt()));
+
+        UserMeta userMeta = new UserMeta();
+        userMeta.setProfileStatus(ProfileStatus.SET);
+        userMeta.setUser(tempUser);
+        userMeta.setVerified(true);
+        userMeta.setVerified(false);
+
+        when(userRepository.findByEmail(any(String.class))).thenReturn(tempUser);
+        when(userMetaRepository.findByUser(any(User.class))).thenReturn(userMeta);
+
+        assertThrows(VerificationException.class, () -> {
+            userService.loginProcess(user);
+        });
+    }
+
+    @Test
+    public void testLoginEmptyEmail() {
+        User user = new User();
+        user.setEmail("");
+
+        assertThrows(UnAuthorizedUserException.class, () -> {
+            userService.loginProcess(user);
+        });
+    }
+
+    @Test
+    public void loadUserByUsername_success() {
+        User testUser = new User();
+        testUser.setEmail("pankti@gmail.com");
+        testUser.setPasswordHash("pankti25");
+
+        when(userRepository.findByEmail(any(String.class))).thenReturn(testUser);
+
+        UserDetails userDetails = userService.loadUserByUsername("pankti@gmail.com");
+
+        assertEquals(testUser, userDetails);
+    }
+
+    @Test
+    public void updateProfileStatus_success() throws UserNotFoundException {
+        User testUser = new User();
+        testUser.setEmail("pankti@gmail.com");
+        testUser.setPasswordHash("pankti25");
+        UserMeta userMeta = new UserMeta();
+        userMeta.setProfileStatus(ProfileStatus.UNSET);
+        testUser.setUserMeta(userMeta);
+
+        when(userRepository.findByEmail(any(String.class))).thenReturn(testUser);
+
+        userService.updateProfileStatus("pankti@gmail.com");
+
+        assertEquals(ProfileStatus.SET, userMeta.getProfileStatus());
+        verify(userMetaRepository).save(userMeta);
+    }
 }
