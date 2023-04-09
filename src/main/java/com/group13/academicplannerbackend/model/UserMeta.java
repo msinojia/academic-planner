@@ -25,4 +25,8 @@ public class UserMeta implements Serializable {
 
     @Enumerated(EnumType.STRING)
     private ProfileStatus profileStatus;
+
+    public boolean isVerified() {
+        return verified;
+    }
 }

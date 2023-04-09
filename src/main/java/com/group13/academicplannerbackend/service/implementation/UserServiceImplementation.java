@@ -73,7 +73,7 @@ public class UserServiceImplementation implements UserService, UserDetailsServic
 
                 if (userMeta.isVerified() == true) {
                     UserDetails userDetails = (UserDetails) tempUser;
-                    String jwtToken = Constants.JWT_TOKEN_PREFIX + jwtUtil.generateToken(userDetails);
+                    String jwtToken = Constants.getJwtTokenPrefix() + jwtUtil.generateToken(userDetails);
                     return new JwtResponse(jwtToken, userMeta.getProfileStatus());
                 } else {
                     throw new VerificationException("please varify your email");

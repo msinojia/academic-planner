@@ -1,6 +1,7 @@
 package com.group13.academicplannerbackend.util;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,13 +24,18 @@ public class JWTUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expirationInMillis))
-                .signWith(SignatureAlgorithm.HS256, secret)
-                .compact();
+        Date issuedAt = new Date(System.currentTimeMillis());
+        Date expirationDate = new Date(System.currentTimeMillis() + expirationInMillis);
+        String subject = userDetails.getUsername();
+    
+        JwtBuilder jwtBuilder = Jwts.builder();
+        jwtBuilder.setClaims(claims);
+        jwtBuilder.setSubject(subject);
+        jwtBuilder.setIssuedAt(issuedAt);
+        jwtBuilder.setExpiration(expirationDate);
+        jwtBuilder.signWith(SignatureAlgorithm.HS256, secret);
+    
+        return jwtBuilder.compact();
     }
 
     public String getUsernameFromToken(String token) {

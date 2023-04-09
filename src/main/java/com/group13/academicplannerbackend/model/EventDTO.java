@@ -27,4 +27,10 @@ public class EventDTO {
     private EventCategory eventCategory;
     @Enumerated(EnumType.STRING)
     private EventType eventType;
+
+    public String getEventDTOName()
+    {
+        return name;
+    }
+
 }
