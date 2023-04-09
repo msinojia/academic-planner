@@ -18,7 +18,7 @@ public class UserMeta implements Serializable {
 
     @OneToOne
     @JoinColumn(name = "user_id")
-    //@JsonBackReference
+    @JsonBackReference
     private User user;
 
     private boolean verified;

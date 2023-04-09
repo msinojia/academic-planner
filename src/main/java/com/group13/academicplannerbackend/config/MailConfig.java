@@ -10,7 +10,7 @@ import java.util.Properties;
 
 @Configuration
 public class MailConfig {
-    private static final int PortNumber = 3;
+    private static final int PortNumber = 587;
     @Value("${spring.mail.password}")
     private String mailPassword;
 
