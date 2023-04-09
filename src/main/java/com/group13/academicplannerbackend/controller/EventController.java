@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -23,6 +25,23 @@ public class EventController {
     @Autowired
     public EventController(EventService eventService) {
         this.eventService = eventService;
+    }
+
+    @CrossOrigin
+    @PostMapping("/reschedule")
+    public ResponseEntity<?> rescheduleVariableEvents(Principal principal) {
+        List<EventDTO> unscheduledEvents = eventService.rescheduleVariableEvents(principal);
+        Map<String, Object> response = new HashMap<>();
+
+        if (unscheduledEvents.isEmpty()) {
+            response.put("message", "Variable events rescheduled successfully");
+            return ResponseEntity.ok(response);
+        } else {
+            // Return the list of unscheduled events along with a message
+            response.put("message", "Some variable events couldn't be rescheduled.");
+            response.put("unscheduledEvents", unscheduledEvents);
+            return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(response);
+        }
     }
 
     @CrossOrigin
@@ -49,10 +68,19 @@ public class EventController {
 
     @CrossOrigin
     @PostMapping("/fixed")
-    public ResponseEntity<String> createFixedEvent(@RequestBody FixedEvent fixedEvent, Principal principal) {
-        eventService.createFixedEvent(fixedEvent, principal);
-        return ResponseEntity.ok("FixedEvent created successfully");
+    public ResponseEntity<Map> createFixedEvent(@RequestBody FixedEvent fixedEvent, Principal principal) {
+        List<EventDTO> unscheduledVariableEvents = eventService.createFixedEvent(fixedEvent, principal);
+        Map<String, Object> response = new HashMap<>();
+        if(unscheduledVariableEvents.isEmpty()) {
+            response.put("message", "Fixed Event created successfully");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("message", "Fixed Event created successfully but some variable events couldn't be scheduled.");
+            response.put("unscheduledEvents", unscheduledVariableEvents);
+            return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(response);
+        }
     }
+
 
     @CrossOrigin
     @PutMapping("/fixed")
@@ -90,9 +118,17 @@ public class EventController {
 
     @CrossOrigin
     @PostMapping("/variable")
-    public ResponseEntity<String> createVariableEvent(@RequestBody VariableEvent variableEvent, Principal principal) {
-        eventService.createVariableEvent(variableEvent, principal);
-        return ResponseEntity.ok("Variable Event created successfully");
+    public ResponseEntity<Map> createVariableEvent(@RequestBody VariableEvent variableEvent, Principal principal) {
+        List<EventDTO> unscheduledVariableEvents = eventService.createVariableEvent(variableEvent, principal);
+        Map<String, Object> response = new HashMap<>();
+        if(unscheduledVariableEvents.isEmpty()) {
+            response.put("message", "Variable Event created successfully");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("message", "Some variable events couldn't be scheduled.");
+            response.put("unscheduledEvents", unscheduledVariableEvents);
+            return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(response);
+        }
     }
 
     @CrossOrigin

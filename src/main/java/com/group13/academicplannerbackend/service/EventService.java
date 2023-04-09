@@ -8,14 +8,16 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EventService {
-    void createFixedEvent(FixedEvent fixedEvent, Principal principal);
+    List<EventDTO> createFixedEvent(FixedEvent fixedEvent, Principal principal);
     UpdateEventStatus updateFixedEvent(FixedEvent fixedEvent, Principal principal);
     DeleteEventStatus deleteFixedEvent (Long id, Principal principal);
-    void createVariableEvent(VariableEvent variableEvent, Principal principal);
+    List<EventDTO> createVariableEvent(VariableEvent variableEvent, Principal principal);
     UpdateEventStatus updateVariableEvent(VariableEvent variableEvent, Principal principal);
     DeleteEventStatus deleteVariableEvent (Long id, Principal principal);
     public List<EventDTO> getEvents(LocalDate firstDate, LocalDate secondDate, Principal principal);
     Optional<FixedEvent> findFixedEventById(Long id);
 
     Optional<VariableEvent> findVariableEventById(Long id);
+
+    List<EventDTO> rescheduleVariableEvents(Principal principal);
 }
