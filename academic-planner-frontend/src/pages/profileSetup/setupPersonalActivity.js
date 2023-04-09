@@ -3,10 +3,12 @@ import Title from 'antd/es/typography/Title';
 import React, { useState } from 'react';
 import { addEvent } from './api';
 import AddScheduleForm from './components/addScheduleForm';
+import { useNavigate } from 'react-router-dom';
 
 const SetupPersonalActivity = () => {
   const [isModalOpen, setIsModalOpen] = useState(true);
   const [dataSource, setDataSource] = useState([]);
+  const navigate = useNavigate();
 
   const handleSaveClick = (data) => {
     data = {
@@ -15,6 +17,7 @@ const SetupPersonalActivity = () => {
     };
     addEvent(data);
     setDataSource([...dataSource, data]);
+    navigate('/home');
     setIsModalOpen(false);
   };
   const columns = [

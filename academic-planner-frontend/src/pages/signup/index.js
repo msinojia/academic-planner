@@ -9,7 +9,13 @@ const SignupPage = () => {
 
   const onFinish = (formValues) => {
     console.log({ ...formValues, passwordHash: formValues.password });
-    sigupnRequest({ ...formValues, passwordHash: formValues.password });
+    const { email, firstName, lastName, password } = formValues;
+    sigupnRequest({
+      email,
+      firstName,
+      lastName,
+      passwordHash: password,
+    });
     message.success('User Created Successfully');
     navigate('/login');
   };
