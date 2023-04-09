@@ -6,4 +6,9 @@ public class UserNotFoundException extends RuntimeException {
     public UserNotFoundException(String email) {
         this.email = email;
     }
+
+    @Override
+    public String getMessage() {
+        return email;
+    }
 }
