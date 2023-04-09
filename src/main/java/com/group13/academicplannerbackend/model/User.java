@@ -48,6 +48,10 @@ public class User implements UserDetails {
     @JsonManagedReference
     private List<VariableEvent> variableEvents;
 
+    public User() {
+
+    }
+
     /**
      * @return
      */
