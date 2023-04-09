@@ -58,7 +58,13 @@ public class EventServiceImplementation implements EventService {
     @Override                                        
     public UpdateEventStatus updateFixedEvent(FixedEvent fixedEvent, Principal principal) {
         User user = userRepository.findByEmail(principal.getName());
-        FixedEvent checkInsideDB=fixedEventRepository.findById(fixedEvent.getId()).orElse(null);
+        //FixedEvent checkInsideDB=fixedEventRepository.findById(fixedEvent.getId()).orElse(null);
+        FixedEvent checkInsideDB = null;
+        try {
+            checkInsideDB = fixedEventRepository.findById(fixedEvent.getId()).orElseThrow(() -> new RuntimeException("Event not found"));
+        } catch (RuntimeException e) {
+            return UpdateEventStatus.NOT_FOUND;
+        }
         if(checkInsideDB!=null )
         {
             // Check if the user is authorized to update the event
