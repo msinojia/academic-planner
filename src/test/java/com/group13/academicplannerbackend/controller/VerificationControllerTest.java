@@ -1,5 +1,6 @@
 package com.group13.academicplannerbackend.controller;
 
+import com.group13.academicplannerbackend.exception.UserNotFoundException;
 import com.group13.academicplannerbackend.exception.VerificationException;
 import com.group13.academicplannerbackend.service.UserService;
 import com.group13.academicplannerbackend.service.VerificationService;
@@ -8,6 +9,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -80,19 +82,25 @@ public class VerificationControllerTest {
                 .andExpect(content().string(containsString("Verification code has expired")));
     }
 
-//    @Test
-//    public void testResendVerificationEmailNonExistingUser() throws Exception {
-//        doThrow(new UserNotFoundException("non_existing@example.com")).when(verificationService).sendVerificationEmail("non_existing@example.com");
-//
-//        mockMvc.perform(get("/resend-verification?email=non_existing@example.com"))
-//                .andExpect(status().is4xxClientError());
-//    }
-//
-//    @Test
-//    public void testResendVerificationEmailAlreadyVerifiedUser() throws Exception {
-//        doThrow(new VerificationException("User is already verified")).when(verificationService).sendVerificationEmail("already_verified@example.com");
-//
-//        mockMvc.perform(get("/resend-verification?email=already_verified@example.com"))
-//                .andExpect(status().is4xxClientError());
-//    }
+    @Test
+    public void testResendVerificationEmailNonExistingUser() {
+        String email = "non_existing@example.com";
+        Mockito.doThrow(new UserNotFoundException(email)).when(verificationService).sendVerificationEmail(email);
+
+        try {
+            verificationController.resendVerificationEmail(email);
+        } catch (UserNotFoundException e) {
+            // Expected exception
+        }
+    }
+
+    @Test
+    public void testResendVerificationEmailSuccess() {
+        String email = "existing@example.com";
+        Mockito.doNothing().when(verificationService).sendVerificationEmail(email);
+
+        verificationController.resendVerificationEmail(email);
+
+        Mockito.verify(verificationService, Mockito.times(1)).sendVerificationEmail(email);
+    }
 }
