@@ -10,6 +10,7 @@ import {
   fetchEvents,
   getFixedEvent,
   getVariableEvent,
+  rescheduleSuggestions,
 } from './api';
 import { formatEventData, getFixedFormValue } from './helper';
 import { Spin, message } from 'antd';
@@ -194,6 +195,9 @@ const CalendarViewHome = () => {
           <button onClick={() => props.onNavigate('TODAY')}>Today</button>
           <button onClick={() => props.onNavigate('PREV')}>Back</button>
           <button onClick={() => props.onNavigate('NEXT')}>Next</button>
+        </span>
+        <span className='rbc-btn-group'>
+          <button onClick={() => rescheduleSuggestions()}>Reschedule</button>
         </span>
       </span>
       <span className='rbc-toolbar-label'>{props.label}</span>

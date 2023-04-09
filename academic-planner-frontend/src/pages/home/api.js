@@ -33,3 +33,7 @@ export const getFixedEvent = async (eventId) => {
 export const getVariableEvent = async (eventId) => {
   return axios.get('/event/variable/' + eventId);
 };
+
+export const rescheduleSuggestions = async () => {
+  return axios.post('/event/reschedule');
+};
