@@ -10,4 +10,8 @@ import lombok.Setter;
 public class JwtResponse {
     private String token;
     private ProfileStatus profileStatus;
+
+    public String getToken() {
+        return token;
+    }
 }

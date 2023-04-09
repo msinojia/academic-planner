@@ -10,6 +10,7 @@ import java.util.Properties;
 
 @Configuration
 public class MailConfig {
+    private static final int PortNumber = 3;
     @Value("${spring.mail.password}")
     private String mailPassword;
 
@@ -18,7 +19,7 @@ public class MailConfig {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
         mailSender.setHost("smtp.gmail.com");
-        mailSender.setPort(587);
+        mailSender.setPort(PortNumber);
         mailSender.setUsername("academicplannerproject@gmail.com");
         mailSender.setPassword(mailPassword);
 

@@ -22,4 +22,9 @@ public class Schedule {
     private VariableEvent variableEvent;
 
     private LocalDateTime scheduledDateTime;
+
+    public  long getScheduleID()
+    {
+        return id;
+    }
 }

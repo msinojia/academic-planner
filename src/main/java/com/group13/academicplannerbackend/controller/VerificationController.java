@@ -16,19 +16,37 @@ public class VerificationController {
     private VerificationService verificationService;
 
     @GetMapping("/verify")
-    public ResponseEntity<String> verify(@RequestParam("code") String code, @RequestParam("email") String email) {
-        String responseBody;
-        try {
-            verificationService.verify(code, email);
-            responseBody = "<!DOCTYPE html><html><head><title>Email Verification</title></head><body><h1>Email verification successful</h1><p>Please <a href='/auth/login'>log in</a> to continue.</p></body></html>";
-            return ResponseEntity.ok(responseBody);
-        } catch (VerificationException e) {
-            boolean alreadyVerified = "User is already verified".equals(e.getMessage());
-            String extraMessage = alreadyVerified ? "<p>Please <a href='/auth/login'>log in</a> to continue.</p>" : "<p>Please <a href='/resend-verification?email=" + email + "'>resend the verification email</a> and try again.</p>";
-            responseBody = "<!DOCTYPE html><html><head><title>Email Verification</title></head><body><h1>Email verification failed</h1><p>" + e.getMessage() + ".</p>" + extraMessage + "</body></html>";
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
-        }
+public ResponseEntity<String> verify(@RequestParam("code") String code, @RequestParam("email") String email) {
+    try {
+        verificationService.verify(code, email);
+        String successMessage = "Email verification successful";
+        String loginLink = "/auth/login";
+        String responseBody = generateResponse(successMessage, loginLink);
+        return ResponseEntity.ok(responseBody);
+    } catch (VerificationException e) {
+        boolean alreadyVerified = "User is already verified".equals(e.getMessage());
+        String errorMessage = alreadyVerified ? "User is already verified." : "Email verification failed.";
+        String extraMessage = alreadyVerified ? generateLoginLink() : generateResendLink(email);
+        String responseBody = generateResponse(errorMessage, extraMessage);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
     }
+}
+
+private String generateResponse(String message, String extraContent) {
+    return String.format("<!DOCTYPE html>%n" +
+            "<html>%n" +
+            "<head><title>Email Verification</title></head>%n" +
+            "<body><h1>%s</h1><p>%s</p></body>%n" +
+            "</html>", message, extraContent);
+}
+
+private String generateLoginLink() {
+    return "<p>Please <a href='/auth/login'>log in</a> to continue.</p>";
+}
+
+private String generateResendLink(String email) {
+    return String.format("<p>Please <a href='/resend-verification?email=%s'>resend the verification email</a> and try again.</p>", email);
+}
 
     @GetMapping("/resend-verification")
     public void resendVerificationEmail(@RequestParam("email") String email) {

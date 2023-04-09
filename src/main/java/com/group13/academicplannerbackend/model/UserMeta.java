@@ -18,11 +18,15 @@ public class UserMeta implements Serializable {
 
     @OneToOne
     @JoinColumn(name = "user_id")
-    @JsonBackReference
+    //@JsonBackReference
     private User user;
 
     private boolean verified;
 
     @Enumerated(EnumType.STRING)
     private ProfileStatus profileStatus;
+
+    public boolean isVerified() {
+        return verified;
+    }
 }

@@ -40,4 +40,9 @@ public class VariableEvent {
     @OneToOne(mappedBy = "variableEvent", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private Schedule schedule;
+
+    public String getVariableEventName()
+    {
+        return name;
+    }
 }

@@ -21,6 +21,7 @@ import java.io.IOException;
 public class JWTRequestFilter extends OncePerRequestFilter {
     private UserDetailsService userDetailsService;
     private JWTUtil jwtUtil;
+    private static final int Substring = 3;
 
     @Autowired
     public JWTRequestFilter(UserDetailsService userDetailsService, JWTUtil jwtUtil) {
@@ -37,7 +38,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
         String jwtToken = null;
 
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
-            jwtToken = requestTokenHeader.substring(7);
+            jwtToken = requestTokenHeader.substring(Substring);
             try {
                 username = jwtUtil.getUsernameFromToken(jwtToken);
             } catch (IllegalArgumentException e) {
@@ -53,12 +54,10 @@ public class JWTRequestFilter extends OncePerRequestFilter {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
             if (jwtUtil.validateToken(jwtToken, userDetails)) {
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                usernamePasswordAuthenticationToken
-                        .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                UsernamePasswordAuthenticationToken AuthenticationToken = new UsernamePasswordAuthenticationToken( userDetails, null, userDetails.getAuthorities());
+                AuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                SecurityContextHolder.getContext().setAuthentication(AuthenticationToken);
             }
         }
         filterChain.doFilter(request, response);
