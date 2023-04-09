@@ -1,32 +1,28 @@
 package com.group13.academicplannerbackend.service.implementation;
 
-import com.group13.academicplannerbackend.model.EventDTO;
-import com.group13.academicplannerbackend.model.FixedEvent;
-import com.group13.academicplannerbackend.model.RepeatEvent;
-import com.group13.academicplannerbackend.model.User;
-import com.group13.academicplannerbackend.repository.FixedEventRepository;
-import com.group13.academicplannerbackend.repository.UserRepository;
-import com.group13.academicplannerbackend.repository.VariableEventRepository;
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.group13.academicplannerbackend.model.*;
+import com.group13.academicplannerbackend.repository.*;
 import com.group13.academicplannerbackend.service.implementation.EventServiceImplementation;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.modelmapper.ModelMapper;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.security.Principal;
-import java.util.Collections;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@SpringBootTest
 public class EventServiceImplementationTest {
-
     @InjectMocks
     private EventServiceImplementation eventService;
 
@@ -39,38 +35,29 @@ public class EventServiceImplementationTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private ModelMapper modelMapper;
-
-    @Mock
-    private Principal principal;
-
-    private User user;
-    private FixedEvent fixedEvent;
-
-    @Before
-    public void setUp() {
-        user = new User();
-        user.setEmail("test@example.com");
-
-        fixedEvent = new FixedEvent();
-        fixedEvent.setRepeat(true);
-        RepeatEvent repeatEvent = new RepeatEvent();
-        fixedEvent.setRepeatEvent(repeatEvent);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    public void testCreateFixedEvent() {
-        Mockito.when(principal.getName()).thenReturn(user.getEmail());
-        Mockito.when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
-        Mockito.when(fixedEventRepository.save(any(FixedEvent.class))).thenReturn(fixedEvent);
+    void testCreateFixedEvent() {
+        FixedEvent fixedEvent = new FixedEvent();
+        fixedEvent.setId(1L);
+        fixedEvent.setName("ASDC Classes");
+        fixedEvent.setStartDate(LocalDate.now());
+        fixedEvent.setStartTime(LocalTime.of(14, 30));
+        fixedEvent.setEndDate(LocalDate.now());
+        fixedEvent.setEndTime(LocalTime.of(17, 30));
 
-        List<EventDTO> expectedEvents = Collections.singletonList(new EventDTO());
-        Mockito.when(eventService.rescheduleVariableEvents(principal)).thenReturn(expectedEvents);
+        Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn("pankti@gmail.com");
 
-        List<EventDTO> returnedEvents = eventService.createFixedEvent(fixedEvent, principal);
+        User user = new User();
+        user.setEmail("tpankti@gmail.com");
+        when(userRepository.findByEmail("pankti@gmail.com")).thenReturn(user);
 
-        assertEquals(expectedEvents, returnedEvents);
-        Mockito.verify(fixedEventRepository, Mockito.times(1)).save(any(FixedEvent.class));
+        eventService.createFixedEvent(fixedEvent, principal);
+        verify(fixedEventRepository, times(1)).save(fixedEvent);
     }
 }

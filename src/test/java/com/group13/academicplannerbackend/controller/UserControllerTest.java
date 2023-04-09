@@ -58,8 +58,8 @@ public class UserControllerTest {
     public void testSignup_Success() {
         // Create a mock User object
         User user = new User();
-        user.setEmail("test@example.com");
-        user.setPasswordHash("password");
+        user.setEmail("pankti@gmail.com");
+        user.setPasswordHash("pankti25");
 
         // Call the signup method with the mock User object
         doNothing().when(userService).register(user);
@@ -75,8 +75,8 @@ public class UserControllerTest {
     public void testLogin_Success() {
         // Given
         User user = new User();
-        user.setEmail("testuser@test.com");
-        user.setPasswordHash("testpassword");
+        user.setEmail("pankti@gmail.com");
+        user.setPasswordHash("pankti25");
         JwtResponse jwtResponse = new JwtResponse("testjwttoken", ProfileStatus.UNSET);
         when(userService.loginProcess(user)).thenReturn(jwtResponse);
 
@@ -93,8 +93,8 @@ public class UserControllerTest {
     public void testLogin_UnAuthorizedUserException() {
         // Given
         User user = new User();
-        user.setEmail("testuser@test.com");
-        user.setPasswordHash("testpassword");
+        user.setEmail("pankti@gmail.com");
+        user.setPasswordHash("pankti25");
         String errorMessage = "Wrong username or password";
         when(userService.loginProcess(user)).thenThrow(new UnAuthorizedUserException(errorMessage));
 
@@ -111,8 +111,8 @@ public class UserControllerTest {
     public void testLogin_VerificationException() {
         // Given
         User user = new User();
-        user.setEmail("testuser@test.com");
-        user.setPasswordHash("testpassword");
+        user.setEmail("pankti@gmail.com");
+        user.setPasswordHash("pankti25");
         String errorMessage = "please varify your email";
         when(userService.loginProcess(user)).thenThrow(new VerificationException(errorMessage));
 
@@ -128,7 +128,7 @@ public class UserControllerTest {
     @Test
     public void testUpdateProfileStatus_Success() {
         // Arrange
-        String userEmail = "user1@example.com";
+        String userEmail = "pankti@gmail.com";
         UserMeta userMeta = new UserMeta();
         userMeta.setProfileStatus(ProfileStatus.UNSET);
         User user = new User();
@@ -149,7 +149,7 @@ public class UserControllerTest {
     @Test
     void testUpdateProfileStatus_Failure() throws Exception {
         // Given
-        String userEmail = "test@example.com";
+        String userEmail = "pankti@gmail.com";
         Principal mockPrincipal = Mockito.mock(Principal.class);
         when(mockPrincipal.getName()).thenReturn(userEmail);
         doThrow(new UserNotFoundException("User not found with email " + userEmail))
