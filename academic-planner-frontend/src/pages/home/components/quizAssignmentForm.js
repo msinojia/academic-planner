@@ -23,7 +23,6 @@ const QuizAssignmentForm = (props) => {
     form
       .validateFields()
       .then((values) => {
-        console.log(values);
         const reqBody = {
           name: values.name,
           details: values.details,
@@ -38,12 +37,9 @@ const QuizAssignmentForm = (props) => {
         addVariableEvent(reqBody);
         window.location.reload();
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => {});
   };
-  // WeekDays;
-  console.log({ props });
+
   return props.isModalOpen ? (
     <Modal
       title={'Add New Schedule'}

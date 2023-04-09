@@ -8,7 +8,6 @@ const SignupPage = () => {
   const navigate = useNavigate();
 
   const onFinish = (formValues) => {
-    console.log({ ...formValues, passwordHash: formValues.password });
     const { email, firstName, lastName, password } = formValues;
     sigupnRequest({
       email,

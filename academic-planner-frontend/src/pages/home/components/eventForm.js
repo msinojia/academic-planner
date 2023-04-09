@@ -10,6 +10,7 @@ import {
   Radio,
   InputNumber,
   DatePicker,
+  message,
 } from 'antd';
 import { WeekDays } from '../../profileSetup/contsants';
 import moment from 'moment';
@@ -24,7 +25,6 @@ const EventForm = (props) => {
   const [form] = Form.useForm();
 
   const [eventType, setEventType] = useState(props.data.eventType);
-  console.log(props.data);
   const [fixEventFormMete, setFixEventFormMete] = useState({
     isRepeat: props.data.isRepeat === 'true',
     isDaily: props.data.repititionType === 'DAILY',
@@ -36,14 +36,12 @@ const EventForm = (props) => {
   }, [props]);
 
   const onSubmit = () => {
-    console.log('on submit');
     let weeklyRepeatDays = [false, false, false, false, false, false, false];
 
     form
       .validateFields()
       .then(async (values) => {
         if (props.data.eventType === 'FIXED') {
-          console.log('Generating FIXED');
           if (values.weekDays)
             values.weekDays.map(
               (weekDay) => (weeklyRepeatDays[weekDay] = true)
@@ -71,7 +69,6 @@ const EventForm = (props) => {
                 : null,
           };
         } else if (props.data.eventType === 'VARIABLE') {
-          console.log('Generating VARIABLE');
           values = {
             ...values,
             deadline: moment(
@@ -82,7 +79,6 @@ const EventForm = (props) => {
             duration: `PT${values.days * 24 + values.hours}H${values.minutes}M`,
           };
         } else {
-          console.log('Generating EXTRA');
           values = {
             ...props.data,
             name: values.name,
@@ -92,29 +88,28 @@ const EventForm = (props) => {
 
         if (props.data.id) {
           if (props.data.eventType === 'VARIABLE') {
-            // await updateVeriableEvent(values);
-            console.log('Update Variable', values);
+            await updateVeriableEvent(values);
           } else {
-            console.log('Update Fixed', values);
-            // await updateFixedEvent(values);
+            await updateFixedEvent(values);
           }
         } else {
           if (props.data.eventType === 'VARIABLE') {
-            console.log('Add Variable', values);
-            // await addVariableEvent(values);
+            await addVariableEvent(values);
           } else {
-            console.log('Add Fixed', values);
-            // await addEvent(values);
+            await addEvent(values);
           }
         }
         form.resetFields();
         delete values.weekDays;
         delete values.weeklyRepeatDays;
         delete values.repititionType;
-        // console.log(values);
       })
       .catch((err) => {
-        console.log(err);
+        message.error(
+          `Something went wrong whhile ${
+            props.isAddEvent ? 'creating' : 'updating'
+          } event`
+        );
       });
   };
   const validateTime = (_, values) => {
@@ -130,7 +125,6 @@ const EventForm = (props) => {
     return Promise.resolve();
   };
   const renderVariableFields = () => {
-    console.log('eventDate', props.data.eventDate);
     return (
       <>
         <Form.Item

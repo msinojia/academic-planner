@@ -6,7 +6,6 @@ const AddLectLabForm = (props) => {
   const [form] = Form.useForm();
 
   const onSubmit = () => {
-    console.log('on submit');
     let weeklyRepeatDays = [false, false, false, false, false, false, false];
     form
       .validateFields()
@@ -32,9 +31,7 @@ const AddLectLabForm = (props) => {
         form.resetFields();
         props.handleOk(values);
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => {});
   };
   // WeekDays;
   return (

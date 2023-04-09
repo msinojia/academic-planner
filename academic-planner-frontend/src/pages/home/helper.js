@@ -57,8 +57,6 @@ export const getFixedFormValue = (data) => {
 export const getSaveFixData = (data, values) => {
   let weeklyRepeatDays = [false, false, false, false, false, false, false];
 
-  console.log(data, values, data.isRepeat);
-
   if (values.weekDays)
     values.weekDays.map((weekDay) => (weeklyRepeatDays[weekDay] = true));
   else if (data?.repeatEvent?.weeklyRepeatDays)

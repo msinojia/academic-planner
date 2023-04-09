@@ -17,7 +17,6 @@ import { Spin, message } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import EventMenu from './components/eventMenu';
-import { WeekDays } from '../profileSetup/contsants';
 
 const localizer = momentLocalizer(moment);
 const momentFormatString = 'ddd MMM DD YYYY HH:mm:ss [GMT]ZZ';
@@ -53,7 +52,6 @@ const CalendarViewHome = () => {
 
   const handleEdit = async (event) => {
     setIsLoading(true);
-    console.log(event);
     try {
       if (event.eventType === 'FIXED') {
         const { data } = await getFixedEvent(event.id);
@@ -145,9 +143,7 @@ const CalendarViewHome = () => {
     setIsLoading(true);
     try {
       const res = await fetchEvents(start, end);
-      console.log({ res }, 'res.data', res.data);
       setEvents(formatEventData(res.data));
-      console.log('formatEventData', formatEventData(res.data));
     } catch (e) {
       message.error('Something went wrong while fetching data');
     }
@@ -162,7 +158,6 @@ const CalendarViewHome = () => {
             end: moment(dateOrObject).endOf(view).toDate(),
           }
         : dateOrObject;
-    console.log({ start, end, view });
     setStartDate(moment(start));
     fetchEventsByRange(
       moment(start).startOf(view).format(DATE_FORMAT),
@@ -226,7 +221,6 @@ const CalendarViewHome = () => {
   );
 
   const handleViewChange = (view, temp) => {
-    console.log('view', view);
     fetchEventsByRange(
       moment(startDate).startOf(view).format(DATE_FORMAT),
       moment(startDate).endOf(view).format(DATE_FORMAT)

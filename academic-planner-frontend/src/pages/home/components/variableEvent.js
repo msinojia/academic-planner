@@ -13,12 +13,9 @@ const VariableEventModal = (props) => {
     form
       .validateFields()
       .then((values) => {})
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => {});
   };
-  // WeekDays;
-  console.log({ props });
+
   return props.isModalOpen ? (
     <Modal
       title={props.isAdd ? 'Add New Schedule' : 'Edit Existing Schedule'}
