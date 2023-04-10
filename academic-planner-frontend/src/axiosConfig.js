@@ -1,9 +1,10 @@
 import { message } from 'antd';
 import axios, { AxiosError } from 'axios';
-// import useAuthStore from '../hooks/useAuthStore';
+
+const baseURL = 'http://18.188.138.107:8080';
 
 const axiosInstance = axios.create({
-  baseURL: `${'http://localhost:8080'}`,
+  baseURL,
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',
