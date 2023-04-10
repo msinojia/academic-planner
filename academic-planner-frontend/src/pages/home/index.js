@@ -37,18 +37,7 @@ const CalendarViewHome = () => {
     // eslint-disable-next-line
   }, []);
 
-  const [events, setEvents] = useState([
-    // {
-    //   start: moment().subtract(4, 'hours').toDate(),
-    //   end: moment().subtract(3, 'hours').toDate(),
-    //   title: 'Event 1',
-    // },
-    // {
-    //   start: moment().toDate(),
-    //   end: moment().add(1, 'hours').toDate(),
-    //   title: 'Event 2',
-    // },
-  ]);
+  const [events, setEvents] = useState([]);
 
   const handleEdit = async (event) => {
     setIsLoading(true);
@@ -183,6 +172,11 @@ const CalendarViewHome = () => {
     });
   };
 
+  const rescheduleSuggestionEvents = async () => {
+    await rescheduleSuggestions();
+    window.location.reload();
+  };
+
   const CustomToolbar = (props) => (
     <div className='rbc-toolbar'>
       <span className='rbc-btn-group'>
@@ -192,7 +186,7 @@ const CalendarViewHome = () => {
           <button onClick={() => props.onNavigate('NEXT')}>Next</button>
         </span>
         <span className='rbc-btn-group'>
-          <button onClick={() => rescheduleSuggestions()}>Reschedule</button>
+          <button onClick={rescheduleSuggestionEvents}>Reschedule</button>
         </span>
       </span>
       <span className='rbc-toolbar-label'>{props.label}</span>

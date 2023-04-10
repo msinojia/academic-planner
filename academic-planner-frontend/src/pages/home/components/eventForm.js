@@ -82,10 +82,20 @@ const EventForm = (props) => {
           values = {
             ...props.data,
             name: values.name,
-            description: values.description,
+            details: values.details,
+            startDate: props.data.startDate.format('YYYY-MM-DD'),
+            endDate: props.data.startDate.format('YYYY-MM-DD'),
+            startTime: `${props.data.startTime.format('HH:mm')}`,
+            endTime: `${props.data.endTime.format('HH:mm')}`,
+            isRepeat: props.data.isRepeat === 'true',
+            isReschedulable: props.data.isReschedulable === 'true',
+            eventType: 'FIXED',
           };
         }
 
+        delete values.weekDays;
+        delete values.weeklyRepeatDays;
+        delete values.repititionType;
         if (props.data.id) {
           if (props.data.eventType === 'VARIABLE') {
             await updateVeriableEvent(values);
@@ -100,9 +110,6 @@ const EventForm = (props) => {
           }
         }
         form.resetFields();
-        delete values.weekDays;
-        delete values.weeklyRepeatDays;
-        delete values.repititionType;
       })
       .catch((err) => {
         message.error(
