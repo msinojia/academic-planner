@@ -5,6 +5,7 @@ import com.group13.academicplannerbackend.exception.VerificationException;
 import com.group13.academicplannerbackend.model.User;
 import com.group13.academicplannerbackend.model.UserMeta;
 import com.group13.academicplannerbackend.model.VerificationCode;
+import com.group13.academicplannerbackend.repository.UserMetaRepository;
 import com.group13.academicplannerbackend.repository.UserRepository;
 import com.group13.academicplannerbackend.repository.VerificationCodeRepository;
 import com.group13.academicplannerbackend.service.EmailService;
@@ -22,6 +23,8 @@ public class VerificationServiceImplementation implements VerificationService {
     private VerificationCodeRepository verificationCodeRepository;
     private UserRepository userRepository;
     private EmailService emailService;
+    private UserMetaRepository userMetaRepository;
+    private  UserMeta userMeta;
     @Value("${server.port}")
     private int serverPort;
 
@@ -29,10 +32,17 @@ public class VerificationServiceImplementation implements VerificationService {
     public VerificationServiceImplementation(
             VerificationCodeRepository verificationCodeRepository,
             UserRepository userRepository,
-            EmailService emailService) {
+            EmailService emailService,
+            UserMetaRepository userMetaRepository) {
         this.verificationCodeRepository = verificationCodeRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.userMetaRepository=userMetaRepository;
+    }
+
+    public UserMeta getUserMetaObjectByUser(User user)
+    {
+        return userMetaRepository.findByUser(user);
     }
 
     /**
@@ -41,11 +51,11 @@ public class VerificationServiceImplementation implements VerificationService {
     @Override
     public void verify(String code, String email) throws VerificationException {
         User user = userRepository.findByEmail(email);
+        userMeta = getUserMetaObjectByUser(user);
         if (user == null) {
             throw new VerificationException("User not found");
         }
 
-        UserMeta userMeta = user.getUserMeta();
         if(userMeta.isVerified()) {
             throw new VerificationException("User is already verified");
         }
@@ -67,10 +77,11 @@ public class VerificationServiceImplementation implements VerificationService {
     @Override
     public void sendVerificationEmail(String email) {
         User user = userRepository.findByEmail(email);
+        userMeta = getUserMetaObjectByUser(user);
         if(user == null) {
             throw new UserNotFoundException(email);
         }
-        UserMeta userMeta = user.getUserMeta();
+
         if(userMeta != null && userMeta.isVerified()) {
             throw new VerificationException("User is already verified");
         }
@@ -85,14 +96,15 @@ public class VerificationServiceImplementation implements VerificationService {
         // Create a new code if no code exists or if it has expired (and hence removed)
         if(verificationCode == null) {
             String code = UUID.randomUUID().toString();
-            LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(Constants.VERIFICATION_CODE_EXPIRY_MINUTES);
+            LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(Constants.getVerificationCodeExpiryMinutes());
             verificationCode = new VerificationCode(code, user.getEmail(), expiryTime);
             verificationCodeRepository.save(verificationCode);
         }
 
         // Generate verification URL and send email
+        String url="0.0.0.0:%d/verify?email=%s&code=%s";
         String verificationUrl = String.format(
-                "0.0.0.0:%d/verify?email=%s&code=%s",
+                url,
                 serverPort,
                 user.getEmail(),
                 verificationCode.getCode()

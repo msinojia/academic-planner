@@ -5,14 +5,18 @@ import SetupEssential from './setupEssentials';
 import SetupJob from './setupJob';
 import SetupLectLab from './setupLectLab';
 import SetupPersonalActivity from './setupPersonalActivity';
-import { authApi } from '../../axiosConfig';
+import { useNavigate } from 'react-router-dom';
+import { setUserProfileComplete } from './api';
 
 const ProfieSetup = () => {
-  authApi.checkAuthentication()
-
   const [currentStep, setCurrentStep] = useState(1);
+  const navigate = useNavigate();
 
   const handleNext = () => {
+    if (currentStep > 3) {
+      navigate('/home');
+      setUserProfileComplete();
+    }
     setCurrentStep(currentStep + 1);
   };
 

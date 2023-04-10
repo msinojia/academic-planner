@@ -43,8 +43,11 @@ public class UserController {
         try {
             userService.updateProfileStatus(principal.getName());
             return ResponseEntity.ok("Profile status updated to SET");
-        } catch (UserNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to update profile status: " + e.getMessage());
+        } catch (Exception e) {
+            String errorMessage = "Failed to update profile status: " + e.getMessage();
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorMessage);
         }
     }
 }

@@ -11,14 +11,15 @@ const AddScheduleForm = (props) => {
     form
       .validateFields()
       .then((values) => {
-        weeklyRepeatDays[values.weekDay] = true;
+        if (values.weekDays)
+          values.weekDays.map((weekDay) => (weeklyRepeatDays[weekDay] = true));
         values = {
           ...values,
           startDate: new Date().toISOString().slice(0, 10),
           endDate: '2023-12-31',
-          startTime: `${values.startTime.hour()}:${values.startTime.minute()}`,
-          endTime: `${values.endTime.hour()}:${values.endTime.minute()}`,
-          isReschedulable: false,
+          startTime: `${values.startTime.format('HH:mm')}`,
+          endTime: `${values.endTime.format('HH:mm')}`,
+          isReschedulable: true,
           eventPriority: 'HIGH',
           isRepeat: true,
           repeatEvent: {
@@ -95,12 +96,17 @@ const AddScheduleForm = (props) => {
         </Form.Item>
         {isDaily === 'no' && (
           <Form.Item
-            name='weekDay'
+            name='weekDays'
             label='Day of Week'
             hasFeedback
-            rules={[{ required: true, message: 'Please select a week day!' }]}
+            rules={[{ required: true, message: 'Please select week day(s)!' }]}
           >
-            <Select placeholder='Select a week day' options={WeekDays} />
+            <Select
+              mode='multiple'
+              allowClear
+              placeholder='Select week day(s)'
+              options={WeekDays}
+            ></Select>
           </Form.Item>
         )}
       </Form>

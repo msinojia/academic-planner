@@ -25,6 +25,10 @@ public class EventServiceImplementation implements EventService {
     private VariableEventRepository variableEventRepository;
     private UserRepository userRepository;
     private ModelMapper modelMapper;
+    private static final int year = 2030;
+    private static final int month = 12;
+    private static final int day = 31;
+    private static final int divisor = 7;
 
     @Autowired
     public EventServiceImplementation(FixedEventRepository fixedEventRepository,
@@ -138,7 +142,7 @@ public class EventServiceImplementation implements EventService {
         ZonedDateTime atlanticZonedDateTime = ZonedDateTime.now(atlanticTimeZone);
         LocalDateTime currentDateTime = atlanticZonedDateTime.toLocalDateTime();
         LocalDate currentDate = currentDateTime.toLocalDate();
-        LocalDate endDate = LocalDate.of(2030,12,31);
+        LocalDate endDate = LocalDate.of(year,month,day);
 //        List<EventDTO> fixedEventDTOs = getFixedEvents(currentDate, LocalDate.MAX, principal);
         List<EventDTO> fixedEventDTOs = getFixedEvents(currentDate, endDate, principal);
         List<VariableEvent> variableEvents = variableEventRepository.findAllByUserEmail(principal.getName());
@@ -263,22 +267,29 @@ public class EventServiceImplementation implements EventService {
         for(FixedEvent e : repeatingEvents) {
             RepititionType repititionType = e.getRepeatEvent().getRepititionType();
 
-            int daysDifferenceBetweenStartAndEndDate = Period.between(e.getStartDate(), e.getEndDate()).getDays();
-            LocalDate date1 = (e.getStartDate().isEqual(firstDate) || e.getStartDate().isAfter(firstDate)) ? e.getStartDate() : firstDate.minusDays(daysDifferenceBetweenStartAndEndDate);
-            LocalDate date2 = (e.getRepeatEvent().getEndDate().isBefore(secondDate))
-                    ? e.getRepeatEvent().getEndDate() : secondDate;
+            int daysDiffBetweenStartAndEnd = Period.between(e.getStartDate(), e.getEndDate()).getDays();
+            LocalDate date1;
+            if (e.getStartDate().isEqual(firstDate) || e.getStartDate().isAfter(firstDate)) {
+                date1 = e.getStartDate();
+            } else {
+                date1 = firstDate.minusDays(daysDiffBetweenStartAndEnd);
+            }
+            
+            LocalDate date2;
+            if (e.getRepeatEvent().getEndDate().isBefore(secondDate)) {
+                date2 = e.getRepeatEvent().getEndDate();
+            } else {
+                date2 = secondDate;
+            }
+            
+            long daysDiffBetweenDate1AndDate2 = ChronoUnit.DAYS.between(date1, date2);
 
-//            int daysDifferenceBetweenDate1AndDate2 = Period.between(date1, date2).getDays();
-            long daysDifferenceBetweenDate1AndDate2 = ChronoUnit.DAYS.between(date1, date2);
-
-            for (long i = 0; i <= daysDifferenceBetweenDate1AndDate2; i++) {
-                if(repititionType == RepititionType.DAILY
-                        || (repititionType == RepititionType.WEEKLY
-                        && e.getRepeatEvent().getWeeklyRepeatDays()[date1.plusDays(i).getDayOfWeek().getValue()%7])
-                ) {
+            for (long i = 0; i <= daysDiffBetweenDate1AndDate2; i++) {
+                if(isDaily(repititionType) || isWeeklyOnDay(repititionType, e, date1,i)) 
+                 {
                     FixedEvent clonedFixedEvent = SerializationUtils.clone(e);
                     clonedFixedEvent.setStartDate(date1.plusDays(i));
-                    clonedFixedEvent.setEndDate(date1.plusDays(i).plusDays(daysDifferenceBetweenStartAndEndDate));
+                    clonedFixedEvent.setEndDate(date1.plusDays(i).plusDays(daysDiffBetweenStartAndEnd));
                     events.add(clonedFixedEvent);
                 }
             }
@@ -289,6 +300,37 @@ public class EventServiceImplementation implements EventService {
                 .peek(eventDTO -> eventDTO.setEventType(EventType.FIXED))
                 .collect(Collectors.toList());
         return eventDTOs;
+    }
+
+    private boolean isDaily(RepititionType repititionType) {
+        return repititionType == RepititionType.DAILY;
+    }
+
+    private boolean isWeeklyOnDay(RepititionType repititionType, FixedEvent e, LocalDate date,long i) {
+    
+               boolean isWeekly = repititionType == RepititionType.WEEKLY;
+               RepeatEvent repeatEvent = e.getRepeatEvent();
+               boolean[] weeklyRepeatDays = repeatEvent.getWeeklyRepeatDays();
+               int dayOfWeek = date.plusDays(i).getDayOfWeek().getValue() % divisor;
+               boolean isOnWeeklyRepeatDay = isWeekly && weeklyRepeatDays[dayOfWeek];
+               return isOnWeeklyRepeatDay;
+    }
+
+    private boolean isWithinFixedEvent(LocalDateTime startTime, LocalDateTime potentialEndTime, LocalDateTime fixedEventStart, LocalDateTime fixedEventEnd) {
+
+        
+        boolean isStartTimeEqualToStart = startTime.isEqual(fixedEventStart);
+        boolean isStartTimeAfterStart = startTime.isAfter(fixedEventStart);
+        boolean isStartTimeBeforeEnd = startTime.isBefore(fixedEventEnd);
+        
+        boolean isPotentialEndTimeAfterStart = potentialEndTime.isAfter(fixedEventStart);
+        boolean isPotentialEndTimeBeforeEnd = potentialEndTime.isBefore(fixedEventEnd);
+
+        boolean isStartTimeWithinFixedEvent = (isStartTimeEqualToStart || isStartTimeAfterStart) && isStartTimeBeforeEnd;
+        boolean isPotentialEndTimeWithinFE = isPotentialEndTimeAfterStart && isPotentialEndTimeBeforeEnd;
+        boolean isEventWithinFixedEvent = startTime.isBefore(fixedEventStart) && potentialEndTime.isAfter(fixedEventEnd);
+        
+        return isStartTimeWithinFixedEvent || isPotentialEndTimeWithinFE || isEventWithinFixedEvent;
     }
 
     private LocalDateTime findStartTimeForVariableEvent(VariableEvent variableEvent, List<EventDTO> fixedEventDTOs, LocalDateTime startDateTime, LocalDateTime endDateTime) {
@@ -303,10 +345,7 @@ public class EventServiceImplementation implements EventService {
 
                 potentialEndTime = startDateTime.plus(variableEvent.getDuration());
 
-                if ((startDateTime.isEqual(fixedEventStart) || startDateTime.isAfter(fixedEventStart)) && startDateTime.isBefore(fixedEventEnd)
-                        || (potentialEndTime.isAfter(fixedEventStart) && potentialEndTime.isBefore(fixedEventEnd))
-                        || (startDateTime.isBefore(fixedEventStart) && potentialEndTime.isAfter(fixedEventEnd))
-                ) {
+                if (isWithinFixedEvent(startDateTime, potentialEndTime, fixedEventStart, fixedEventEnd)) {
                     startDateTime = fixedEventEnd;
                     slotFound = false;
                     break;
@@ -314,9 +353,10 @@ public class EventServiceImplementation implements EventService {
             }
         }
 
-        if (slotFound &&
-                (potentialEndTime.isBefore(variableEvent.getDeadline()) || (potentialEndTime.isEqual(variableEvent.getDeadline())))
-        ) {
+        LocalDateTime deadline = variableEvent.getDeadline();
+        boolean endTimeIsBeforeDeadline = potentialEndTime.isBefore(deadline) || potentialEndTime.isEqual(deadline);
+
+        if (slotFound && endTimeIsBeforeDeadline) {
             return startDateTime;
         } else {
             return null;
