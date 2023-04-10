@@ -1,6 +1,7 @@
 package com.group13.academicplannerbackend.controller;
 
 import com.group13.academicplannerbackend.exception.UnAuthorizedUserException;
+import com.group13.academicplannerbackend.exception.UserNotFoundException;
 import com.group13.academicplannerbackend.exception.VerificationException;
 import com.group13.academicplannerbackend.model.JwtResponse;
 import com.group13.academicplannerbackend.model.User;

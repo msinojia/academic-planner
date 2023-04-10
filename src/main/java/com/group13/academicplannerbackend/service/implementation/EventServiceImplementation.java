@@ -32,9 +32,9 @@ public class EventServiceImplementation implements EventService {
 
     @Autowired
     public EventServiceImplementation(FixedEventRepository fixedEventRepository,
-                                      VariableEventRepository variableEventRepository,
-                                      UserRepository userRepository,
-                                      ModelMapper modelMapper) {
+            VariableEventRepository variableEventRepository,
+            UserRepository userRepository,
+            ModelMapper modelMapper) {
         this.fixedEventRepository = fixedEventRepository;
         this.variableEventRepository = variableEventRepository;
         this.userRepository = userRepository;
@@ -46,7 +46,7 @@ public class EventServiceImplementation implements EventService {
      */
     @Override
     public List<EventDTO> createFixedEvent(FixedEvent fixedEvent, Principal principal) {
-        if(fixedEvent.isRepeat()) {
+        if (fixedEvent.isRepeat()) {
             RepeatEvent repeatEvent = fixedEvent.getRepeatEvent();
             repeatEvent.setEvent(fixedEvent);
             fixedEvent.setRepeatEvent(repeatEvent);
@@ -58,21 +58,19 @@ public class EventServiceImplementation implements EventService {
         return rescheduleVariableEvents(principal);
     }
 
-
-    @Override                                        
+    @Override
     public UpdateEventStatus updateFixedEvent(FixedEvent fixedEvent, Principal principal) {
         User user = userRepository.findByEmail(principal.getName());
-        FixedEvent checkInsideDB=fixedEventRepository.findById(fixedEvent.getId()).orElse(null);
-        if(checkInsideDB!=null )
-        {
+        FixedEvent checkInsideDB = fixedEventRepository.findById(fixedEvent.getId()).orElse(null);
+
+        if (checkInsideDB != null) {
             // Check if the user is authorized to update the event
             if (!user.getId().equals(checkInsideDB.getUser().getId())) {
                 return UpdateEventStatus.NOT_AUTHORIZED;
             }
 
-            if(checkInsideDB.isReschedulable())
-            {
-                if(fixedEvent.isRepeat()) {
+            if (checkInsideDB.isReschedulable()) {
+                if (fixedEvent.isRepeat()) {
                     RepeatEvent repeatEvent = fixedEvent.getRepeatEvent();
                     repeatEvent.setEvent(fixedEvent);
                     fixedEvent.setRepeatEvent(repeatEvent);
@@ -80,23 +78,19 @@ public class EventServiceImplementation implements EventService {
                 }
                 fixedEventRepository.save(fixedEvent);
                 return UpdateEventStatus.SUCCESS;
-            }
-            else{
+            } else {
                 return UpdateEventStatus.NOT_RESCHEDULABLE;
             }
-        }
-        else
-        {
+        } else {
             return UpdateEventStatus.NOT_FOUND;
         }
     }
 
-    @Override                                          
+    @Override
     public DeleteEventStatus deleteFixedEvent(Long id, Principal principal) {
         User user = userRepository.findByEmail(principal.getName());
-        FixedEvent checkInsideDB=fixedEventRepository.findById(id).orElse(null);
-        if(checkInsideDB!=null)
-        {
+        FixedEvent checkInsideDB = fixedEventRepository.findById(id).orElse(null);
+        if (checkInsideDB != null) {
             // Check if the user is authorized to update the event
             if (!user.getId().equals(checkInsideDB.getUser().getId())) {
                 return DeleteEventStatus.NOT_AUTHORIZED;
@@ -104,9 +98,7 @@ public class EventServiceImplementation implements EventService {
 
             fixedEventRepository.deleteById(id);
             return DeleteEventStatus.SUCCESS;
-        }
-        else
-        {
+        } else {
             return DeleteEventStatus.NOT_FOUND;
         }
     }
@@ -117,6 +109,11 @@ public class EventServiceImplementation implements EventService {
      */
     @Override
     public List<EventDTO> createVariableEvent(VariableEvent variableEvent, Principal principal) {
+
+        if (variableEvent == null) {
+            return null;
+        }
+
         User user = userRepository.findByEmail(principal.getName());
         variableEvent.setUser(user);
 
@@ -136,15 +133,17 @@ public class EventServiceImplementation implements EventService {
         ZonedDateTime atlanticZonedDateTime = ZonedDateTime.now(atlanticTimeZone);
         LocalDateTime currentDateTime = atlanticZonedDateTime.toLocalDateTime();
         LocalDate currentDate = currentDateTime.toLocalDate();
-        LocalDate endDate = LocalDate.of(year,month,day);
-//        List<EventDTO> fixedEventDTOs = getFixedEvents(currentDate, LocalDate.MAX, principal);
+        LocalDate endDate = LocalDate.of(year, month, day);
+        // List<EventDTO> fixedEventDTOs = getFixedEvents(currentDate, LocalDate.MAX,
+        // principal);
         List<EventDTO> fixedEventDTOs = getFixedEvents(currentDate, endDate, principal);
         List<VariableEvent> variableEvents = variableEventRepository.findAllByUserEmail(principal.getName());
         fixedEventDTOs.sort(Comparator.comparing(EventDTO::getStartDate).thenComparing(EventDTO::getStartTime));
         variableEvents.sort(Comparator.comparing(VariableEvent::getDeadline));
 
         for (VariableEvent variableEvent : variableEvents) {
-            LocalDateTime scheduledDateTime =  findStartTimeForVariableEvent(variableEvent, fixedEventDTOs, currentDateTime, variableEvent.getDeadline());
+            LocalDateTime scheduledDateTime = findStartTimeForVariableEvent(variableEvent, fixedEventDTOs,
+                    currentDateTime, variableEvent.getDeadline());
             variableEvent.getSchedule().setScheduledDateTime(scheduledDateTime);
             EventDTO varEventDTO = variableEventToDTO(variableEvent);
             if (scheduledDateTime != null) {
@@ -161,11 +160,13 @@ public class EventServiceImplementation implements EventService {
 
     public EventDTO variableEventToDTO(VariableEvent variableEvent) {
         EventDTO varEventDTO = modelMapper.map(variableEvent, EventDTO.class);
-        if(variableEvent.getSchedule().getScheduledDateTime() != null) {
+        if (variableEvent.getSchedule().getScheduledDateTime() != null) {
             varEventDTO.setStartDate(variableEvent.getSchedule().getScheduledDateTime().toLocalDate());
             varEventDTO.setStartTime(variableEvent.getSchedule().getScheduledDateTime().toLocalTime());
-            varEventDTO.setEndDate(variableEvent.getSchedule().getScheduledDateTime().plus(variableEvent.getDuration()).toLocalDate());
-            varEventDTO.setEndTime(variableEvent.getSchedule().getScheduledDateTime().plus(variableEvent.getDuration()).toLocalTime());
+            varEventDTO.setEndDate(
+                    variableEvent.getSchedule().getScheduledDateTime().plus(variableEvent.getDuration()).toLocalDate());
+            varEventDTO.setEndTime(
+                    variableEvent.getSchedule().getScheduledDateTime().plus(variableEvent.getDuration()).toLocalTime());
         }
         varEventDTO.setReschedulable(true);
         varEventDTO.setEventType(EventType.VARIABLE);
@@ -175,40 +176,34 @@ public class EventServiceImplementation implements EventService {
     @Override
     public UpdateEventStatus updateVariableEvent(VariableEvent variableEvent, Principal principal) {
         User user = userRepository.findByEmail(principal.getName());
-        VariableEvent checkInsideDB=variableEventRepository.findById(variableEvent.getId()).orElse(null);
-        if(checkInsideDB!=null)
-        {
+        VariableEvent checkInsideDB = variableEventRepository.findById(variableEvent.getId()).orElse(null);
+        if (checkInsideDB != null) {
             if (!user.getId().equals(checkInsideDB.getUser().getId())) {
                 return UpdateEventStatus.NOT_AUTHORIZED;
             }
             variableEvent.setUser(user);
             variableEventRepository.save(variableEvent);
             return UpdateEventStatus.SUCCESS;
-        }
-        else
-        {
+        } else {
             return UpdateEventStatus.NOT_FOUND;
         }
-       
+
     }
 
-    @Override                                          
+    @Override
     public DeleteEventStatus deleteVariableEvent(Long id, Principal principal) {
         User user = userRepository.findByEmail(principal.getName());
-        VariableEvent checkInsideDB=variableEventRepository.findById(id).orElse(null);
-        if(checkInsideDB!=null)
-        {
+        VariableEvent checkInsideDB = variableEventRepository.findById(id).orElse(null);
+        if (checkInsideDB != null) {
             if (!user.getId().equals(checkInsideDB.getUser().getId())) {
                 return DeleteEventStatus.NOT_AUTHORIZED;
             }
             variableEventRepository.deleteById(id);
             return DeleteEventStatus.SUCCESS;
-        }
-        else
-        {
+        } else {
             return DeleteEventStatus.NOT_FOUND;
         }
-      
+
     }
 
     /**
@@ -220,14 +215,17 @@ public class EventServiceImplementation implements EventService {
         LocalDateTime firstDateTime = LocalDateTime.of(firstDate, LocalTime.MIN);
         LocalDateTime secondDateTime = LocalDateTime.of(secondDate, LocalTime.MAX);
 
-        List<VariableEvent> variableEvents = variableEventRepository.findAllByStartDateOrEndDateBetweenDates(firstDateTime, secondDateTime, principal.getName());
+        List<VariableEvent> variableEvents = variableEventRepository
+                .findAllByStartDateOrEndDateBetweenDates(firstDateTime, secondDateTime, principal.getName());
         List<EventDTO> variableEventDTOs = new ArrayList<>();
         for (VariableEvent varEvent : variableEvents) {
             EventDTO varEventDTO = modelMapper.map(varEvent, EventDTO.class);
             varEventDTO.setStartDate(varEvent.getSchedule().getScheduledDateTime().toLocalDate());
             varEventDTO.setStartTime(varEvent.getSchedule().getScheduledDateTime().toLocalTime());
-            varEventDTO.setEndDate(varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalDate());
-            varEventDTO.setEndTime(varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalTime());
+            varEventDTO.setEndDate(
+                    varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalDate());
+            varEventDTO.setEndTime(
+                    varEvent.getSchedule().getScheduledDateTime().plus(varEvent.getDuration()).toLocalTime());
             varEventDTO.setReschedulable(true);
             varEventDTO.setEventType(EventType.VARIABLE);
             variableEventDTOs.add(varEventDTO);
@@ -238,7 +236,7 @@ public class EventServiceImplementation implements EventService {
     }
 
     /**
-     * @param id 
+     * @param id
      * @return
      */
     @Override
@@ -255,10 +253,12 @@ public class EventServiceImplementation implements EventService {
      * @return
      */
     public List<EventDTO> getFixedEvents(LocalDate firstDate, LocalDate secondDate, Principal principal) {
-        List<FixedEvent> events = fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(firstDate, secondDate, principal.getName());
-        List<FixedEvent> repeatingEvents = fixedEventRepository.findAllRepeatingByEndDateGreaterThanDate(firstDate, principal.getName());
+        List<FixedEvent> events = fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(firstDate,
+                secondDate, principal.getName());
+        List<FixedEvent> repeatingEvents = fixedEventRepository.findAllRepeatingByEndDateGreaterThanDate(firstDate,
+                principal.getName());
 
-        for(FixedEvent e : repeatingEvents) {
+        for (FixedEvent e : repeatingEvents) {
             RepititionType repititionType = e.getRepeatEvent().getRepititionType();
 
             int daysDiffBetweenStartAndEnd = Period.between(e.getStartDate(), e.getEndDate()).getDays();
@@ -268,19 +268,18 @@ public class EventServiceImplementation implements EventService {
             } else {
                 date1 = firstDate.minusDays(daysDiffBetweenStartAndEnd);
             }
-            
+
             LocalDate date2;
             if (e.getRepeatEvent().getEndDate().isBefore(secondDate)) {
                 date2 = e.getRepeatEvent().getEndDate();
             } else {
                 date2 = secondDate;
             }
-            
+
             long daysDiffBetweenDate1AndDate2 = ChronoUnit.DAYS.between(date1, date2);
 
             for (long i = 0; i <= daysDiffBetweenDate1AndDate2; i++) {
-                if(isDaily(repititionType) || isWeeklyOnDay(repititionType, e, date1,i)) 
-                 {
+                if (isDaily(repititionType) || isWeeklyOnDay(repititionType, e, date1, i)) {
                     FixedEvent clonedFixedEvent = SerializationUtils.clone(e);
                     clonedFixedEvent.setStartDate(date1.plusDays(i));
                     clonedFixedEvent.setEndDate(date1.plusDays(i).plusDays(daysDiffBetweenStartAndEnd));
@@ -300,34 +299,37 @@ public class EventServiceImplementation implements EventService {
         return repititionType == RepititionType.DAILY;
     }
 
-    private boolean isWeeklyOnDay(RepititionType repititionType, FixedEvent e, LocalDate date,long i) {
-    
-               boolean isWeekly = repititionType == RepititionType.WEEKLY;
-               RepeatEvent repeatEvent = e.getRepeatEvent();
-               boolean[] weeklyRepeatDays = repeatEvent.getWeeklyRepeatDays();
-               int dayOfWeek = date.plusDays(i).getDayOfWeek().getValue() % divisor;
-               boolean isOnWeeklyRepeatDay = isWeekly && weeklyRepeatDays[dayOfWeek];
-               return isOnWeeklyRepeatDay;
+    private boolean isWeeklyOnDay(RepititionType repititionType, FixedEvent e, LocalDate date, long i) {
+
+        boolean isWeekly = repititionType == RepititionType.WEEKLY;
+        RepeatEvent repeatEvent = e.getRepeatEvent();
+        boolean[] weeklyRepeatDays = repeatEvent.getWeeklyRepeatDays();
+        int dayOfWeek = date.plusDays(i).getDayOfWeek().getValue() % divisor;
+        boolean isOnWeeklyRepeatDay = isWeekly && weeklyRepeatDays[dayOfWeek];
+        return isOnWeeklyRepeatDay;
     }
 
-    private boolean isWithinFixedEvent(LocalDateTime startTime, LocalDateTime potentialEndTime, LocalDateTime fixedEventStart, LocalDateTime fixedEventEnd) {
+    private boolean isWithinFixedEvent(LocalDateTime startTime, LocalDateTime potentialEndTime,
+            LocalDateTime fixedEventStart, LocalDateTime fixedEventEnd) {
 
-        
         boolean isStartTimeEqualToStart = startTime.isEqual(fixedEventStart);
         boolean isStartTimeAfterStart = startTime.isAfter(fixedEventStart);
         boolean isStartTimeBeforeEnd = startTime.isBefore(fixedEventEnd);
-        
+
         boolean isPotentialEndTimeAfterStart = potentialEndTime.isAfter(fixedEventStart);
         boolean isPotentialEndTimeBeforeEnd = potentialEndTime.isBefore(fixedEventEnd);
 
-        boolean isStartTimeWithinFixedEvent = (isStartTimeEqualToStart || isStartTimeAfterStart) && isStartTimeBeforeEnd;
+        boolean isStartTimeWithinFixedEvent = (isStartTimeEqualToStart || isStartTimeAfterStart)
+                && isStartTimeBeforeEnd;
         boolean isPotentialEndTimeWithinFE = isPotentialEndTimeAfterStart && isPotentialEndTimeBeforeEnd;
-        boolean isEventWithinFixedEvent = startTime.isBefore(fixedEventStart) && potentialEndTime.isAfter(fixedEventEnd);
-        
+        boolean isEventWithinFixedEvent = startTime.isBefore(fixedEventStart)
+                && potentialEndTime.isAfter(fixedEventEnd);
+
         return isStartTimeWithinFixedEvent || isPotentialEndTimeWithinFE || isEventWithinFixedEvent;
     }
 
-    private LocalDateTime findStartTimeForVariableEvent(VariableEvent variableEvent, List<EventDTO> fixedEventDTOs, LocalDateTime startDateTime, LocalDateTime endDateTime) {
+    public LocalDateTime findStartTimeForVariableEvent(VariableEvent variableEvent, List<EventDTO> fixedEventDTOs,
+            LocalDateTime startDateTime, LocalDateTime endDateTime) {
         boolean slotFound = false;
         LocalDateTime potentialEndTime = LocalDateTime.MAX;
         while (!slotFound && startDateTime.isBefore(endDateTime)) {
