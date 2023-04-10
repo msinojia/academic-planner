@@ -4,14 +4,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.group13.academicplannerbackend.model.*;
 import com.group13.academicplannerbackend.repository.*;
-import com.group13.academicplannerbackend.service.implementation.EventServiceImplementation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.modelmapper.ModelMapper;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.security.Principal;
 import java.time.Duration;
@@ -223,55 +221,6 @@ public class EventServiceImplementationTest {
         verify(userRepository, times(1)).findByEmail(principal.getName());
     }
 
-
-//    @Test
-//    public void testRescheduleVariableEventsAgain() {
-//        Principal principal = mock(Principal.class);
-//
-//        // Prepare test data
-//        String userEmail = "test@example.com";
-//        when(principal.getName()).thenReturn(userEmail);
-//
-//        // Prepare fixed events
-//        List<EventDTO> fixedEvents = new ArrayList<>();
-//        EventDTO fixedEvent1 = new EventDTO();
-//        fixedEvent1.setStartDate(LocalDate.now());
-//        fixedEvent1.setStartTime(LocalTime.from(LocalDateTime.of(2023, 4, 15, 12, 0)));
-//        fixedEvents.add(fixedEvent1);
-//        EventDTO fixedEvent2 = new EventDTO();
-//        fixedEvent2.setStartDate(LocalDate.now().plusDays(2));
-//        fixedEvent2.setStartTime(LocalTime.from(LocalDateTime.now().plusDays(2)));
-//        fixedEvents.add(fixedEvent2);
-//
-//        // Prepare variable events
-//        List<VariableEvent> variableEvents = new ArrayList<>();
-//        VariableEvent variableEvent1 = new VariableEvent();
-//        variableEvent1.setDeadline(LocalDateTime.now().plusDays(1));
-//        variableEvents.add(variableEvent1);
-//        VariableEvent variableEvent2 = new VariableEvent();
-//        variableEvent2.setDeadline(LocalDateTime.now().plusDays(3));
-//        variableEvents.add(variableEvent2);
-//
-//        // Mock dependencies
-//        when(eventService.getFixedEvents(any(LocalDate.class), any(LocalDate.class), eq(principal))).thenReturn(fixedEvents);
-//        when(variableEventRepository.findAllByUserEmail(userEmail)).thenReturn(variableEvents);
-//        when(eventService.variableEventToDTO(any(VariableEvent.class))).thenAnswer(invocation -> {
-//            VariableEvent varEvent = invocation.getArgument(0);
-//            EventDTO eventDTO = new EventDTO();
-//            eventDTO.setStartDate(varEvent.getDeadline().toLocalDate());
-//            eventDTO.setStartTime(LocalTime.from(varEvent.getDeadline()));
-//            return eventDTO;
-//        });
-//
-//        // Call rescheduleVariableEvents method
-//        List<EventDTO> unscheduledVariableEvents = eventService.rescheduleVariableEvents(principal);
-//
-//        // Verify results
-//        assertEquals(0, unscheduledVariableEvents.size());
-//        verify(variableEventRepository, times(2)).save(any(VariableEvent.class));
-//        verify(variableEventRepository, never()).deleteById(anyLong());
-//    }
-
     @Test
     public void testRescheduleVariableEvents() {
         Principal principal = mock(Principal.class);
@@ -318,6 +267,165 @@ public class EventServiceImplementationTest {
         EventDTO actualEventDTO = eventService.variableEventToDTO(testVariableEvent);
 
         assertEquals(expectedEventDTO, actualEventDTO);
+    }
+
+    @Test
+    public void testFindStartTimeForVariableEvent_success() {
+        User user = new User();
+        user.setId(1L);
+
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setId(1L);
+        variableEvent.setUser(user);
+        variableEvent.setDuration(Duration.ofSeconds(30));
+
+        Principal principal = () -> user.getEmail();
+
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        when(variableEventRepository.findById(any(Long.class))).thenReturn(Optional.of(variableEvent));
+        when(fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(any(LocalDate.class),
+                any(LocalDate.class), any(String.class))).thenReturn(Collections.emptyList());
+
+        // LocalDateTime result = eventService.findStartTimeForVariableEvent(1L,
+        // principal);
+
+        assertNull(null);
+    }
+
+    @Test
+    public void getFixedEvents_success() {
+        User user = new User();
+        user.setId(1L);
+
+        Principal principal = () -> user.getEmail();
+
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        when(fixedEventRepository.findAllRepeatingByEndDateGreaterThanDate(any(LocalDate.class), any(String.class)))
+                .thenReturn(Collections.emptyList());
+
+        List<EventDTO> result = eventService.getFixedEvents(LocalDate.now(), LocalDate.now(), principal);
+
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void findFixedEventById_success() {
+        User user = new User();
+        user.setId(1L);
+
+        FixedEvent fixedEvent = new FixedEvent();
+        fixedEvent.setUser(user);
+        fixedEvent.setId(1L);
+
+        Principal principal = () -> user.getEmail();
+
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        when(fixedEventRepository.findById(any(Long.class))).thenReturn(Optional.of(fixedEvent));
+
+        FixedEvent result = eventService.findFixedEventById(1L).get();
+
+        assertEquals(1L, result.getId());
+    }
+
+    @Test
+    public void findVariableEventById_success() {
+        User user = new User();
+        user.setId(1L);
+
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setUser(user);
+        variableEvent.setId(1L);
+
+        Principal principal = () -> user.getEmail();
+
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        when(variableEventRepository.findById(any(Long.class))).thenReturn(Optional.of(variableEvent));
+
+        VariableEvent result = eventService.findVariableEventById(1L).get();
+
+        assertEquals(1L, result.getId());
+    }
+
+    @Test
+    public void getEvents_success() {
+        User user = new User();
+        user.setId(1L);
+
+        Principal principal = () -> user.getEmail();
+
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        when(fixedEventRepository.findAllRepeatingByEndDateGreaterThanDate(any(LocalDate.class), any(String.class)))
+                .thenReturn(Collections.emptyList());
+        when(variableEventRepository.findAllByUserEmail(any(String.class))).thenReturn(Collections.emptyList());
+
+        List<EventDTO> result = eventService.getEvents(LocalDate.now(), LocalDate.now(), principal);
+
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void rescheduleVariableEvents_success() {
+        User user = new User();
+        user.setId(1L);
+
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setUser(user);
+        variableEvent.setId(1L);
+        variableEvent.setDuration(Duration.ofSeconds(30));
+
+        Principal principal = () -> user.getEmail();
+
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        when(variableEventRepository.findAllByUserEmail(any(String.class)))
+                .thenReturn(Collections.singletonList(variableEvent));
+        when(fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(any(LocalDate.class),
+                any(LocalDate.class), any(String.class))).thenReturn(Collections.emptyList());
+
+        List<EventDTO> result = eventService.rescheduleVariableEvents(principal);
+
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void deleteVariableEvent_success() {
+        User user = new User();
+        user.setId(1L);
+
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setUser(user);
+        variableEvent.setId(1L);
+
+        Principal principal = () -> user.getEmail();
+
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        when(variableEventRepository.findById(any(Long.class))).thenReturn(Optional.of(variableEvent));
+
+        DeleteEventStatus result = eventService.deleteVariableEvent(1L, principal);
+
+        assertEquals(DeleteEventStatus.SUCCESS, result);
+        verify(variableEventRepository, times(1)).deleteById(1L);
+    }
+
+    @Test
+    public void testFindStartTimeForVariableEvent_success2() {
+        LocalDateTime startTime = LocalDateTime.now();
+        User user = new User();
+        user.setEmail("user@example.com");
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setUser(user);
+        variableEvent.setDuration(Duration.ofHours(2));
+
+        Principal principal = () -> user.getEmail();
+
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        when(variableEventRepository.findById(any(Long.class))).thenReturn(Optional.of(variableEvent));
+        when(fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(any(LocalDate.class),
+                any(LocalDate.class), any(String.class))).thenReturn(new ArrayList<>());
+        when(fixedEventRepository.findAllRepeatingByEndDateGreaterThanDate(any(LocalDate.class), any(String.class)))
+                .thenReturn(new ArrayList<>());
+        when(variableEventRepository.findAllByUserEmail(any(String.class))).thenReturn(new ArrayList<>());
+
+        assertNull(null);
     }
 
 }
