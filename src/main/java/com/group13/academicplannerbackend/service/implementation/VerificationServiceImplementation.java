@@ -102,7 +102,7 @@ public class VerificationServiceImplementation implements VerificationService {
         }
 
         // Generate verification URL and send email
-        String url="0.0.0.0:%d/verify?email=%s&code=%s";
+        String url="18.188.138.107:%d/verify?email=%s&code=%s";
         String verificationUrl = String.format(
                 url,
                 serverPort,
