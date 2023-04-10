@@ -12,12 +12,10 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import java.security.Principal;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +39,13 @@ public class EventServiceImplementationTest {
 
     @Mock
     private ModelMapper modelMapper;
+
+    private Principal principal;
+
+    private ZoneId atlanticTimeZone;
+    private LocalDateTime currentDateTime;
+    private LocalDate currentDate;
+    private LocalDate endDate;
 
     @BeforeEach
     void setUp() {
@@ -223,7 +228,6 @@ public class EventServiceImplementationTest {
         verify(userRepository, times(1)).findByEmail(principal.getName());
     }
 
-
 //    @Test
 //    public void testRescheduleVariableEventsAgain() {
 //        Principal principal = mock(Principal.class);
@@ -297,15 +301,15 @@ public class EventServiceImplementationTest {
 
         VariableEvent testVariableEvent = new VariableEvent();
         testVariableEvent.setId(1L);
-        testVariableEvent.setName("Test Event");
-        testVariableEvent.setDetails("Test event description");
+        testVariableEvent.setName("Group Project");
+        testVariableEvent.setDetails("Group Project");
         testVariableEvent.setSchedule(testSchedule);
         testVariableEvent.setDuration(Duration.ofHours(2));
 
         EventDTO expectedEventDTO = new EventDTO();
         expectedEventDTO.setId(1L);
-        expectedEventDTO.setName("Test Event");
-        expectedEventDTO.setDetails("Test event description");
+        expectedEventDTO.setName("Group Project");
+        expectedEventDTO.setDetails("Group Project");
         expectedEventDTO.setStartDate(LocalDateTime.of(2023, 4, 10, 9, 30).toLocalDate());
         expectedEventDTO.setStartTime(LocalDateTime.of(2023, 4, 10, 9, 30).toLocalTime());
         expectedEventDTO.setEndDate(LocalDateTime.of(2023, 4, 10, 11, 30).toLocalDate());
@@ -320,4 +324,151 @@ public class EventServiceImplementationTest {
         assertEquals(expectedEventDTO, actualEventDTO);
     }
 
+    @Test
+    public void testUpdateVariableEventWithValidDataAndAuthorizedUser() {
+        // Arrange
+        Principal principal = new UsernamePasswordAuthenticationToken("pankti@gmail.com", "pankti2510");
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("pankti@gmail.com");
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setId(1L);
+        variableEvent.setName("Project 13");
+        variableEvent.setUser(user);
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        when(variableEventRepository.findById(variableEvent.getId())).thenReturn(Optional.of(variableEvent));
+
+        // Act
+        UpdateEventStatus result = eventService.updateVariableEvent(variableEvent, principal);
+
+        // Assert
+        assertEquals(UpdateEventStatus.SUCCESS, result);
+        verify(variableEventRepository, times(1)).save(variableEvent);
+    }
+
+    @Test
+    public void testUpdateVariableEventWithInvalidData() {
+        // Arrange
+        Principal principal = new UsernamePasswordAuthenticationToken("pankti@gmail.com", "pankti2510");
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setId(1L);
+        variableEvent.setName("Group 13");
+
+        // Act
+        UpdateEventStatus result = eventService.updateVariableEvent(variableEvent, principal);
+
+        // Assert
+        assertEquals(UpdateEventStatus.NOT_FOUND, result);
+        verify(variableEventRepository, never()).save(any());
+    }
+
+    @Test
+    public void testFindFixedEventByIdWithValidId() {
+        // Arrange
+        Long id = 1L;
+        FixedEvent fixedEvent = new FixedEvent();
+        when(fixedEventRepository.findById(id)).thenReturn(Optional.of(fixedEvent));
+
+        // Act
+        Optional<FixedEvent> result = eventService.findFixedEventById(id);
+
+        // Assert
+        assertTrue(result.isPresent());
+        assertEquals(fixedEvent, result.get());
+        verify(fixedEventRepository, times(1)).findById(id);
+    }
+
+    @Test
+    public void testFindVariableEventByIdWithValidId() {
+        // Arrange
+        Long id = 1L;
+        VariableEvent variableEvent = new VariableEvent();
+        when(variableEventRepository.findById(id)).thenReturn(Optional.of(variableEvent));
+
+        // Act
+        Optional<VariableEvent> result = eventService.findVariableEventById(id);
+
+        // Assert
+        assertTrue(result.isPresent());
+        assertEquals(variableEvent, result.get());
+        verify(variableEventRepository, times(1)).findById(id);
+    }
+
+    @Test
+    public void testFindFixedEventByIdWithInvalidId() {
+        // Arrange
+        Long id = -1L;
+        when(fixedEventRepository.findById(id)).thenReturn(Optional.empty());
+
+        // Act
+        Optional<FixedEvent> result = eventService.findFixedEventById(id);
+
+        // Assert
+        assertFalse(result.isPresent());
+        verify(fixedEventRepository, times(1)).findById(id);
+    }
+
+    @Test
+    public void testFindVariableEventByIdWithInvalidId() {
+        // Arrange
+        Long id = -1L;
+        when(variableEventRepository.findById(id)).thenReturn(Optional.empty());
+
+        // Act
+        Optional<VariableEvent> result = eventService.findVariableEventById(id);
+
+        // Assert
+        assertFalse(result.isPresent());
+        verify(variableEventRepository, times(1)).findById(id);
+    }
+
+    @Test
+    public void testFindFixedEventByIdWithNullId() {
+        // Act
+        Optional<FixedEvent> result = eventService.findFixedEventById(null);
+
+        // Assert
+        assertFalse(result.isPresent());
+        verify(fixedEventRepository, never()).findById(1l);
+    }
+
+    @Test
+    public void testFindVariableEventByIdWithNullId() {
+        // Act
+        Optional<VariableEvent> result = eventService.findVariableEventById(null);
+
+        // Assert
+        assertFalse(result.isPresent());
+        verify(variableEventRepository, never()).findById(1l);
+    }
+
+    @Test
+    public void testFindFixedEventByIdWithZeroId() {
+        // Arrange
+        Long id = 0L;
+        when(fixedEventRepository.findById(id)).thenReturn(Optional.empty());
+
+        // Act
+        Optional<FixedEvent> result = eventService.findFixedEventById(id);
+
+        // Assert
+        assertFalse(result.isPresent());
+        verify(fixedEventRepository, never()).findById(1L);
+    }
+
+    @Test
+    public void testFindVariableEventByIdWithZeroId() {
+        // Arrange
+        Long id = 0L;
+        when(variableEventRepository.findById(id)).thenReturn(Optional.empty());
+
+        // Act
+        Optional<VariableEvent> result = eventService.findVariableEventById(id);
+
+        // Assert
+        assertFalse(result.isPresent());
+        verify(variableEventRepository, never()).findById(1L);
+    }
+
+    
 }
