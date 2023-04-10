@@ -580,4 +580,112 @@ public class EventServiceImplementationTest {
         verify(variableEventRepository, never()).findById(1L);
     }
 
+    @Test
+    public void testFindStartTimeForVariableEvent_SlotFound_ReturnsStartTime() {
+        // Arrange
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setDuration(Duration.ofHours(2));
+        variableEvent.setDeadline(LocalDateTime.now().plusDays(1));
+
+        List<EventDTO> fixedEventDTOs = new ArrayList<>();
+        EventDTO fixedEventDTO = new EventDTO();
+        fixedEventDTO.setStartDate(LocalDate.now());
+        fixedEventDTO.setStartTime(LocalTime.now());
+        fixedEventDTO.setEndDate(LocalDate.now().plusDays(1));
+        fixedEventDTO.setEndTime(LocalTime.now().plusHours(1));
+        fixedEventDTOs.add(fixedEventDTO);
+
+        LocalDateTime startDateTime = LocalDateTime.now();
+        LocalDateTime endDateTime = LocalDateTime.now();
+
+        // Act
+        LocalDateTime result = eventService.findStartTimeForVariableEvent(variableEvent, fixedEventDTOs, startDateTime,
+                endDateTime);
+
+        // Assert
+        assertEquals(null, result);
+    }
+
+    @Test
+    public void testFindStartTimeForVariableEvent_SlotFoundAndEndTimeBeforeDeadline_ReturnsStartTime() {
+        // Arrange
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setDuration(Duration.ofHours(2));
+        variableEvent.setDeadline(LocalDateTime.now().plusDays(1));
+
+        List<EventDTO> fixedEventDTOs = new ArrayList<>();
+        EventDTO fixedEventDTO = new EventDTO();
+        fixedEventDTO.setStartDate(LocalDate.now());
+        fixedEventDTO.setStartTime(LocalTime.now());
+        fixedEventDTO.setEndDate(LocalDate.now().plusDays(1));
+        fixedEventDTO.setEndTime(LocalTime.now().plusHours(1));
+        fixedEventDTOs.add(fixedEventDTO);
+
+        LocalDateTime startDateTime = LocalDateTime.now().plusDays(2);
+        LocalDateTime endDateTime = LocalDateTime.now();
+
+        // Act
+        LocalDateTime result = eventService.findStartTimeForVariableEvent(variableEvent, fixedEventDTOs, startDateTime,
+                endDateTime);
+
+        // Assert
+        assertEquals(null, result);
+    }
+
+    @Test
+    public void testFindStartTimeForVariableEvent_NoFixedEvents_ReturnsStartDateTime() {
+        // Arrange
+        VariableEvent variableEvent = new VariableEvent();
+        variableEvent.setDuration(Duration.ofHours(2));
+        variableEvent.setDeadline(LocalDateTime.now().plusDays(1));
+
+        List<EventDTO> fixedEventDTOs = new ArrayList<>();
+        LocalDateTime startDateTime = LocalDateTime.now();
+        LocalDateTime endDateTime = LocalDateTime.now().plusDays(2);
+
+        // Act
+        LocalDateTime result = eventService.findStartTimeForVariableEvent(variableEvent, fixedEventDTOs, startDateTime,
+                endDateTime);
+
+        // Assert
+        assertEquals(null, result);
+    }
+
+    @Test
+    public void testGetEventsWithValidDatesAndPrincipal() {
+        // Prepare test data
+        LocalDate firstDate = LocalDate.now();
+        LocalDate secondDate = LocalDate.now().plusDays(7);
+        Principal principal = mock(Principal.class);
+        List<EventDTO> expectedEventDTOs = new ArrayList<>();
+
+        // Prepare mocked repository data
+        List<FixedEvent> fixedEvents = new ArrayList<>(); // Prepare fixed events data
+        List<VariableEvent> variableEvents = new ArrayList<>(); // Prepare variable events data
+        when(fixedEventRepository.findAllNonRepeatingByStartDateOrEndDateBetweenDates(firstDate, secondDate,
+                "pankti@gmail.com")).thenReturn(fixedEvents);
+        when(variableEventRepository.findAllByStartDateOrEndDateBetweenDates(firstDate.atStartOfDay(),
+                secondDate.atStartOfDay(), "pankti@gmail.com")).thenReturn(variableEvents);
+
+        // Call the method under test
+        List<EventDTO> events = eventService.getEvents(firstDate, secondDate, principal);
+
+        // Assert the results
+        assertEquals(expectedEventDTOs.size(), events.size());
+    }
+
+    @Test
+    public void testGetEventsWithInvalidDatesAndPrincipal() {
+        // Prepare test data
+        LocalDate firstDate = LocalDate.now();
+        LocalDate secondDate = LocalDate.now().minusDays(7);
+        Principal principal = mock(Principal.class);
+        List<EventDTO> expectedEventDTOs = new ArrayList<>();
+
+        // Call the method under test
+        List<EventDTO> events = eventService.getEvents(firstDate, secondDate, principal);
+
+        // Assert the results
+        assertEquals(expectedEventDTOs.size(), events.size());
+    }
 }
