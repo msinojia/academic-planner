@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -213,7 +214,7 @@ public class EventServiceImplementationTest {
         User user = new User();
         VariableEvent variableEvent = new VariableEvent();
 
-        when(principal.getName()).thenReturn("test@example.com");
+        when(principal.getName()).thenReturn("pankti@gmail.com");
         when(userRepository.findByEmail(principal.getName())).thenReturn(user);
         List<EventDTO> result = eventService.createVariableEvent(variableEvent, principal);
 
@@ -222,6 +223,101 @@ public class EventServiceImplementationTest {
         verify(userRepository, times(1)).findByEmail(principal.getName());
     }
 
-    
+
+//    @Test
+//    public void testRescheduleVariableEventsAgain() {
+//        Principal principal = mock(Principal.class);
+//
+//        // Prepare test data
+//        String userEmail = "test@example.com";
+//        when(principal.getName()).thenReturn(userEmail);
+//
+//        // Prepare fixed events
+//        List<EventDTO> fixedEvents = new ArrayList<>();
+//        EventDTO fixedEvent1 = new EventDTO();
+//        fixedEvent1.setStartDate(LocalDate.now());
+//        fixedEvent1.setStartTime(LocalTime.from(LocalDateTime.of(2023, 4, 15, 12, 0)));
+//        fixedEvents.add(fixedEvent1);
+//        EventDTO fixedEvent2 = new EventDTO();
+//        fixedEvent2.setStartDate(LocalDate.now().plusDays(2));
+//        fixedEvent2.setStartTime(LocalTime.from(LocalDateTime.now().plusDays(2)));
+//        fixedEvents.add(fixedEvent2);
+//
+//        // Prepare variable events
+//        List<VariableEvent> variableEvents = new ArrayList<>();
+//        VariableEvent variableEvent1 = new VariableEvent();
+//        variableEvent1.setDeadline(LocalDateTime.now().plusDays(1));
+//        variableEvents.add(variableEvent1);
+//        VariableEvent variableEvent2 = new VariableEvent();
+//        variableEvent2.setDeadline(LocalDateTime.now().plusDays(3));
+//        variableEvents.add(variableEvent2);
+//
+//        // Mock dependencies
+//        when(eventService.getFixedEvents(any(LocalDate.class), any(LocalDate.class), eq(principal))).thenReturn(fixedEvents);
+//        when(variableEventRepository.findAllByUserEmail(userEmail)).thenReturn(variableEvents);
+//        when(eventService.variableEventToDTO(any(VariableEvent.class))).thenAnswer(invocation -> {
+//            VariableEvent varEvent = invocation.getArgument(0);
+//            EventDTO eventDTO = new EventDTO();
+//            eventDTO.setStartDate(varEvent.getDeadline().toLocalDate());
+//            eventDTO.setStartTime(LocalTime.from(varEvent.getDeadline()));
+//            return eventDTO;
+//        });
+//
+//        // Call rescheduleVariableEvents method
+//        List<EventDTO> unscheduledVariableEvents = eventService.rescheduleVariableEvents(principal);
+//
+//        // Verify results
+//        assertEquals(0, unscheduledVariableEvents.size());
+//        verify(variableEventRepository, times(2)).save(any(VariableEvent.class));
+//        verify(variableEventRepository, never()).deleteById(anyLong());
+//    }
+
+    @Test
+    public void testRescheduleVariableEvents() {
+        Principal principal = mock(Principal.class);
+        User user = new User();
+        VariableEvent variableEvent = new VariableEvent();
+
+        when(principal.getName()).thenReturn("pankti@gmail.com");
+        when(userRepository.findByEmail(principal.getName())).thenReturn(user);
+        LocalDate startDate = LocalDate.of(2023, 4, 9);
+        LocalDate endDate = LocalDate.of(2030, 12, 31);
+
+        List<EventDTO> result = eventService.rescheduleVariableEvents(principal);
+
+        assertNotNull(result);
+        verify(variableEventRepository, times(1)).findAllByUserEmail(principal.getName());
+    }
+
+    @Test
+    public void variableEventToDTOTest() {
+
+        Schedule testSchedule = new Schedule();
+        testSchedule.setScheduledDateTime(LocalDateTime.of(2023, 4, 10, 9, 30));
+
+        VariableEvent testVariableEvent = new VariableEvent();
+        testVariableEvent.setId(1L);
+        testVariableEvent.setName("Test Event");
+        testVariableEvent.setDetails("Test event description");
+        testVariableEvent.setSchedule(testSchedule);
+        testVariableEvent.setDuration(Duration.ofHours(2));
+
+        EventDTO expectedEventDTO = new EventDTO();
+        expectedEventDTO.setId(1L);
+        expectedEventDTO.setName("Test Event");
+        expectedEventDTO.setDetails("Test event description");
+        expectedEventDTO.setStartDate(LocalDateTime.of(2023, 4, 10, 9, 30).toLocalDate());
+        expectedEventDTO.setStartTime(LocalDateTime.of(2023, 4, 10, 9, 30).toLocalTime());
+        expectedEventDTO.setEndDate(LocalDateTime.of(2023, 4, 10, 11, 30).toLocalDate());
+        expectedEventDTO.setEndTime(LocalDateTime.of(2023, 4, 10, 11, 30).toLocalTime());
+        expectedEventDTO.setReschedulable(true);
+        expectedEventDTO.setEventType(EventType.VARIABLE);
+
+        when(modelMapper.map(testVariableEvent, EventDTO.class)).thenReturn(expectedEventDTO);
+
+        EventDTO actualEventDTO = eventService.variableEventToDTO(testVariableEvent);
+
+        assertEquals(expectedEventDTO, actualEventDTO);
+    }
 
 }
